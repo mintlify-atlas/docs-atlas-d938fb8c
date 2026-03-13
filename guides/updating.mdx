@@ -1,0 +1,116 @@
+---
+title: Updating auto-cpufreq
+description: Learn how to update auto-cpufreq to the latest release
+---
+
+## Overview
+
+The `--update` flag allows you to update auto-cpufreq to the latest release directly from the GitHub repository. This functionality clones the latest version, installs it via the auto-cpufreq-installer, and performs a fresh daemon install.
+
+<Warning>
+  Note that your previous custom settings might be erased with the update. Make sure to back up your configuration file at `/etc/auto-cpufreq.conf` before updating.
+</Warning>
+
+## Update Command
+
+To update auto-cpufreq to the latest release, run:
+
+```bash
+sudo auto-cpufreq --update
+```
+
+By default, the latest revision is cloned to `/opt/auto-cpufreq/source`, maintaining the existing directory structure.
+
+## Custom Directory
+
+You can specify a custom directory to clone the update:
+
+```bash
+sudo auto-cpufreq --update=/path/to/custom/directory
+```
+
+## Update Process
+
+When you run the update command, auto-cpufreq will:
+
+1. Check for the latest release from the GitHub repository
+2. Compare your current version with the latest available version
+3. Display version information and prompt for confirmation
+4. Clone the latest release to the specified directory
+5. Remove the existing daemon
+6. Install the new version via auto-cpufreq-installer
+7. Re-enable and start the daemon
+
+<CodeGroup>
+```bash Example Output
+$ sudo auto-cpufreq --update
+Updates are available,
+Current version: v2.0.0
+Latest version: v2.2.0
+Note that your previous custom settings might be erased with the following update
+Do you want to update auto-cpufreq to the latest release? [Y/n]: y
+```
+</CodeGroup>
+
+## Installation Method Limitations
+
+<Tabs>
+  <Tab title="Snap Package">
+    If auto-cpufreq was installed via Snap, the `--update` flag will not work. Instead, update using the snap package manager:
+    
+    ```bash
+    sudo snap refresh auto-cpufreq
+    ```
+  </Tab>
+  
+  <Tab title="AUR (Arch Linux)">
+    For Arch-based distributions installed via AUR, update using your AUR helper:
+    
+    ```bash
+    yay -S auto-cpufreq
+    # or
+    paru -S auto-cpufreq
+    ```
+  </Tab>
+  
+  <Tab title="Installer">
+    The `--update` flag works for installations performed via the auto-cpufreq-installer script.
+  </Tab>
+</Tabs>
+
+## Checking Your Current Version
+
+To check your currently installed version:
+
+```bash
+auto-cpufreq --version
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Rate Limit Exceeded">
+    If you encounter a "GitHub Rate limit exceeded" error, wait for about an hour or use a different network/VPN to check for updates.
+  </Accordion>
+  
+  <Accordion title="Connection Error">
+    If you see "Error Connecting to server!", check your internet connection and try again.
+  </Accordion>
+  
+  <Accordion title="Update Not Detected">
+    If the update process says "auto-cpufreq is up to date" but you believe there's a newer version, check the [releases page](https://github.com/AdnanHodzic/auto-cpufreq/releases) manually.
+  </Accordion>
+</AccordionGroup>
+
+## After Update
+
+After a successful update:
+
+- The daemon will be automatically reinstalled and started
+- Your previous configuration file should be preserved (though it's recommended to back it up)
+- Run `auto-cpufreq --stats` to verify the daemon is running correctly
+- Check `auto-cpufreq --version` to confirm the new version
+
+<Info>
+  The update process maintains backward compatibility with existing configurations, but new features may require manual configuration file adjustments.
+</Info>

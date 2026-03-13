@@ -1,0 +1,420 @@
+---
+title: "Development Setup"
+description: "Set up a development environment for contributing to auto-cpufreq"
+---
+
+## Prerequisites
+
+Before setting up the development environment, ensure you have:
+
+- **Python 3.9+** installed
+- **Git** for version control
+- **sudo/root access** for testing CPU frequency changes
+- **Linux system** (auto-cpufreq only works on Linux)
+
+## Clone the Repository
+
+Start by cloning the auto-cpufreq repository:
+
+```bash
+git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+cd auto-cpufreq
+```
+
+<Note>
+  Always clone using `git clone` rather than downloading as a ZIP file. The project uses git-based versioning, and ZIP downloads will cause build errors.
+</Note>
+
+## Development Installation Methods
+
+There are two main ways to set up a development environment:
+
+### Method 1: Poetry (Recommended)
+
+[Poetry](https://python-poetry.org/) is the recommended way to manage dependencies and virtual environments.
+
+<Steps>
+  <Step title="Install Poetry">
+    If you don't have Poetry installed:
+    
+    ```bash
+    curl -sSL https://install.python-poetry.org | python3 -
+    ```
+    
+    Or using pip:
+    
+    ```bash
+    pip install --user poetry
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    ```bash
+    cd auto-cpufreq
+    poetry install
+    ```
+    
+    This creates a virtual environment and installs all dependencies.
+  </Step>
+  
+  <Step title="Run auto-cpufreq">
+    ```bash
+    # Run any auto-cpufreq command through poetry
+    poetry run auto-cpufreq --help
+    poetry run auto-cpufreq --monitor
+    ```
+  </Step>
+  
+  <Step title="Install with GUI support (optional)">
+    If you want to work on the GUI:
+    
+    ```bash
+    poetry install --extras gui
+    poetry run auto-cpufreq-gtk
+    ```
+  </Step>
+</Steps>
+
+### Method 2: Editable pip Install
+
+Alternatively, you can use pip with an editable install:
+
+<Steps>
+  <Step title="Create virtual environment">
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+  </Step>
+  
+  <Step title="Install in editable mode">
+    ```bash
+    pip install -e .
+    ```
+    
+    The `-e` flag creates an editable installation, so changes to source files are immediately reflected.
+  </Step>
+  
+  <Step title="Run auto-cpufreq">
+    ```bash
+    auto-cpufreq --help
+    sudo auto-cpufreq --monitor
+    ```
+  </Step>
+</Steps>
+
+## Project Structure
+
+Understanding the codebase layout:
+
+```
+auto-cpufreq/
+├── auto_cpufreq/              # Main package directory
+│   ├── bin/                   # Entry points
+│   │   ├── auto_cpufreq.py    # Main CLI entry point
+│   │   └── auto_cpufreq_gtk.py # GUI entry point
+│   ├── battery_scripts/       # Battery threshold management
+│   │   ├── battery.py         # Main battery logic
+│   │   ├── asus.py            # ASUS-specific
+│   │   └── ideapad_laptop.py  # Lenovo IdeaPad-specific
+│   ├── config/                # Configuration handling
+│   │   ├── config.py          # Config file parser
+│   │   └── config_event_handler.py # Config file watcher
+│   ├── modules/               # System monitoring
+│   │   ├── system_info.py     # System information collection
+│   │   └── system_monitor.py  # TUI monitoring interface
+│   ├── gui/                   # GUI application
+│   │   ├── app.py             # Main GUI app
+│   │   ├── objects.py         # GUI widgets
+│   │   └── tray.py            # System tray icon
+│   ├── core.py                # Core CPU frequency logic
+│   ├── globals.py             # Global variables and constants
+│   ├── power_helper.py        # Power management helpers
+│   └── tlp_stat_parser.py     # TLP conflict detection
+├── scripts/                   # Installation/service scripts
+├── auto-cpufreq-installer     # Main installer script
+├── pyproject.toml             # Poetry configuration
+├── poetry.lock                # Locked dependencies
+└── README.md                  # Documentation
+```
+
+## Key Files for Development
+
+### Core Functionality
+
+- **`auto_cpufreq/core.py`**: Main logic for CPU frequency management
+  - `set_autofreq()`: Decision-making algorithm
+  - `set_powersave()`, `set_performance()`: Governor switching
+  - `turbo()`: Turbo boost management
+  - Load threshold calculations
+
+### CLI Interface
+
+- **`auto_cpufreq/bin/auto_cpufreq.py`**: Command-line interface
+  - Click-based argument parsing
+  - Mode dispatching (monitor, live, daemon, etc.)
+  - Installation/removal logic
+
+### Configuration
+
+- **`auto_cpufreq/config/config.py`**: Config file handling
+  - INI file parsing
+  - Config validation
+  - Default value management
+
+### GUI (Optional)
+
+- **`auto_cpufreq/gui/app.py`**: GTK-based GUI application
+  - PyGObject/GTK3 interface
+  - Real-time stats display
+  - Daemon control
+
+## Development Workflow
+
+### Making Changes
+
+<Steps>
+  <Step title="Create a feature branch">
+    ```bash
+    git checkout -b feature/my-new-feature
+    ```
+  </Step>
+  
+  <Step title="Make your changes">
+    Edit the relevant files in `auto_cpufreq/`
+  </Step>
+  
+  <Step title="Test your changes">
+    ```bash
+    # Test in monitor mode (no system changes)
+    sudo poetry run auto-cpufreq --monitor
+    
+    # Test in live mode (temporary changes)
+    sudo poetry run auto-cpufreq --live
+    
+    # Test debug output
+    sudo poetry run auto-cpufreq --debug
+    ```
+  </Step>
+  
+  <Step title="Update dependencies if needed">
+    ```bash
+    poetry update
+    ```
+  </Step>
+</Steps>
+
+### Testing
+
+<Tabs>
+  <Tab title="Manual Testing">
+    ```bash
+    # Test monitor mode
+    sudo poetry run auto-cpufreq --monitor
+    
+    # Test live mode
+    sudo poetry run auto-cpufreq --live
+    
+    # Test daemon installation (careful!)
+    sudo poetry run auto-cpufreq --install
+    sudo poetry run auto-cpufreq --stats
+    sudo poetry run auto-cpufreq --remove
+    
+    # Test config file
+    sudo poetry run auto-cpufreq --config=/path/to/test.conf --monitor
+    ```
+  </Tab>
+  
+  <Tab title="Debug Mode">
+    ```bash
+    # Show detailed debug information
+    sudo poetry run auto-cpufreq --debug --monitor
+    ```
+    
+    Debug output includes:
+    - System information
+    - Available governors
+    - Current CPU states
+    - Decision-making process
+    - sysfs paths being accessed
+  </Tab>
+  
+  <Tab title="GUI Testing">
+    ```bash
+    # Install with GUI support
+    poetry install --extras gui
+    
+    # Run GUI
+    poetry run auto-cpufreq-gtk
+    ```
+    
+    GUI requires:
+    - `PyGObject` (python3-gi)
+    - GTK 3.0+
+    - Desktop environment
+  </Tab>
+</Tabs>
+
+## Common Development Tasks
+
+### Adding a New Command-Line Option
+
+Edit `auto_cpufreq/bin/auto_cpufreq.py`:
+
+```python
+@click.option("--my-option", is_flag=True, help="Description of my option")
+def main(monitor, live, ..., my_option):
+    if my_option:
+        # Handle your new option
+        do_something()
+```
+
+### Adding a Configuration Parameter
+
+Edit `auto_cpufreq/config/config.py`:
+
+```python
+def get_my_parameter(self, section):
+    """
+    Get my_parameter from config file
+    """
+    if self.has_config():
+        try:
+            return self.config.get(section, "my_parameter")
+        except:
+            return default_value
+    return default_value
+```
+
+Then use it in `core.py`:
+
+```python
+from auto_cpufreq.config.config import config
+
+if config.has_config():
+    value = config.get_my_parameter("charger")
+```
+
+### Modifying Core Logic
+
+Edit `auto_cpufreq/core.py`. The main function to understand is:
+
+```python
+def set_autofreq():
+    """
+    Main decision-making function called in daemon loop
+    """
+    # Get current state
+    load1m = psutil.getloadavg()[0]
+    temp = get_cpu_temperature()
+    
+    # Make decision
+    if charging():
+        # AC power logic
+        set_performance()
+    else:
+        # Battery power logic
+        set_powersave()
+```
+
+## Updating Dependencies
+
+If you need to add or update dependencies:
+
+```bash
+# Add a new dependency
+poetry add package-name
+
+# Add a development dependency
+poetry add --group dev package-name
+
+# Update all dependencies
+poetry update
+
+# Update specific package
+poetry update package-name
+```
+
+## Debugging Tips
+
+### Enable Verbose Output
+
+```bash
+# Use --debug flag for detailed output
+sudo poetry run auto-cpufreq --debug --monitor
+```
+
+### Check sysfs Values
+
+```bash
+# Current governor
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+# Current frequency
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+# Available governors
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+
+# Turbo status (Intel)
+cat /sys/devices/system/cpu/intel_pstate/no_turbo
+
+# Turbo status (AMD)
+cat /sys/devices/system/cpu/cpufreq/boost
+```
+
+### Monitor Daemon Logs
+
+```bash
+# If daemon is installed
+journalctl -u auto-cpufreq -f
+
+# For Snap installation
+journalctl -u snap.auto-cpufreq.service -f
+```
+
+### Python Debugging
+
+Add breakpoints in the code:
+
+```python
+import pdb; pdb.set_trace()
+```
+
+Then run with poetry:
+
+```bash
+sudo poetry run python -m auto_cpufreq.bin.auto_cpufreq --monitor
+```
+
+## Environment Variables
+
+Useful environment variables for development:
+
+```bash
+# Force snap mode detection
+export IS_INSTALLED_WITH_SNAP=1
+
+# Force AUR mode detection
+export IS_INSTALLED_WITH_AUR=1
+
+# Specify custom config path
+export XDG_CONFIG_HOME=/path/to/custom/config
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Contributing" icon="code-pull-request" href="/development/contributing">
+    Learn how to submit your changes
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Understand the codebase structure
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/AdnanHodzic/auto-cpufreq/issues">
+    Find issues to work on
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.gg/Sjauxtj6kH">
+    Join the community
+  </Card>
+</CardGroup>

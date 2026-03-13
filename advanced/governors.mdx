@@ -1,0 +1,249 @@
+---
+title: "CPU Governors"
+description: "Understanding Linux CPU governors and how auto-cpufreq uses them"
+---
+
+## What Are CPU Governors?
+
+CPU governors are kernel policy modules that determine how the CPU frequency scaling driver selects target frequencies. They implement different strategies for balancing performance and power consumption.
+
+## Available Governors
+
+Linux provides several CPU governors, though availability depends on your CPU driver:
+
+### Performance
+
+Runs the CPU at maximum frequency at all times.
+
+- **Use case**: Maximum performance, benchmarking
+- **Power consumption**: High
+- **When auto-cpufreq uses it**: On AC power by default
+
+```bash
+# Check if performance governor is available
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+```
+
+### Powersave
+
+Runs the CPU at minimum frequency at all times.
+
+- **Use case**: Maximum battery life, low-power systems
+- **Power consumption**: Low
+- **When auto-cpufreq uses it**: On battery power by default
+
+<Warning>
+  With modern CPUs and the `intel_pstate` or `amd-pstate` drivers, `powersave` doesn't mean "always minimum frequency." Instead, it allows the CPU to dynamically scale based on load, but with a bias toward power savings.
+</Warning>
+
+### Schedutil
+
+Uses scheduler utilization data to select frequencies dynamically.
+
+- **Use case**: Modern balanced approach
+- **Power consumption**: Medium, adaptive
+- **When auto-cpufreq uses it**: Not typically, but supported if configured
+
+### Ondemand (Legacy)
+
+Dynamically switches between minimum and maximum frequency based on CPU load.
+
+- **Use case**: Legacy systems with ACPI CPUfreq driver
+- **Power consumption**: Medium, adaptive
+- **Status**: Largely replaced by `schedutil`
+
+### Conservative (Legacy)
+
+Similar to `ondemand` but with more gradual frequency transitions.
+
+- **Use case**: Smoother frequency scaling
+- **Power consumption**: Medium, adaptive  
+- **Status**: Legacy, rarely used
+
+### Userspace
+
+Allows userspace programs to manually set CPU frequency.
+
+- **Use case**: Custom frequency control scripts
+- **When auto-cpufreq uses it**: Never
+
+## How auto-cpufreq Uses Governors
+
+### Default Behavior
+
+auto-cpufreq primarily switches between `performance` and `powersave` governors:
+
+```python
+# From auto_cpufreq/core.py
+def set_powersave():
+    """
+    Set to use "powersave" governor
+    """
+    if get_override() != "performance":
+        for cpu in range(CPUS):
+            governor_path = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor"
+            with open(governor_path, "w") as f:
+                f.write("powersave")
+
+def set_performance():
+    """
+    Set to use "performance" governor  
+    """
+    if get_override() != "powersave":
+        for cpu in range(CPUS):
+            governor_path = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor"
+            with open(governor_path, "w") as f:
+                f.write("performance")
+```
+
+### Decision Logic
+
+<Tabs>
+  <Tab title="On AC Power">
+    ```python
+    # Simplified decision logic
+    if charging():
+        if config.has_config():
+            governor = config.get_charger_governor()
+        else:
+            governor = "performance"
+        
+        set_governor(governor)
+        enable_turbo()
+    ```
+    
+    **Result**: Maximum performance when plugged in
+  </Tab>
+  
+  <Tab title="On Battery">
+    ```python
+    # Simplified decision logic  
+    if not charging():
+        if config.has_config():
+            governor = config.get_battery_governor()
+        else:
+            governor = "powersave"
+        
+        set_governor(governor)
+        disable_turbo()
+    ```
+    
+    **Result**: Maximum battery life on battery power
+  </Tab>
+</Tabs>
+
+### Configuration Override
+
+You can override the default governors using the configuration file:
+
+```ini
+[charger]
+governor = schedutil  # Use schedutil when plugged in
+
+[battery]
+governor = powersave  # Use powersave on battery
+```
+
+Or force a specific governor system-wide:
+
+```bash
+# Force performance mode
+sudo auto-cpufreq --force=performance
+
+# Force powersave mode  
+sudo auto-cpufreq --force=powersave
+
+# Reset to automatic
+sudo auto-cpufreq --force=reset
+```
+
+See [Governor Override](/configuration/governor-override) for details.
+
+## CPU Driver Differences
+
+### intel_pstate vs acpi-cpufreq
+
+**intel_pstate** (modern Intel CPUs):
+- Only supports `performance` and `powersave` governors
+- `powersave` still allows dynamic frequency scaling
+- More efficient than legacy drivers
+- Recommended for most Intel systems
+
+**acpi-cpufreq** (older Intel/AMD CPUs):
+- Supports all governors (performance, powersave, ondemand, conservative, etc.)
+- `powersave` means "always minimum frequency"
+- More control but less efficient
+
+You can switch between drivers by modifying GRUB boot parameters. See [Troubleshooting](/guides/troubleshooting) for instructions.
+
+### amd-pstate vs acpi-cpufreq
+
+**amd-pstate** (modern AMD CPUs, kernel 5.17+):
+- Similar to `intel_pstate` for AMD CPUs
+- Supports `performance` and `powersave` governors
+- More efficient power management
+- Collaborative frequency control with CPU firmware
+
+**acpi-cpufreq** (fallback for AMD):
+- Legacy driver for AMD CPUs
+- Supports all governor types
+- Less efficient than `amd-pstate`
+
+## Checking Current Governor
+
+You can check which governor is currently active:
+
+```bash
+# Check governor for CPU 0
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+# Check governor for all CPUs
+grep . /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+Or use auto-cpufreq:
+
+```bash
+# Monitor mode shows current governor
+sudo auto-cpufreq --monitor
+
+# Stats mode (if daemon is running)
+auto-cpufreq --stats
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Let auto-cpufreq choose">
+    For most users, the default behavior (performance on AC, powersave on battery) works best. Don't override unless you have specific needs.
+  </Accordion>
+  
+  <Accordion title="Use config file for custom needs">
+    If you need consistent custom behavior, use the configuration file rather than forcing governors. This allows per-power-source settings.
+  </Accordion>
+  
+  <Accordion title="Avoid conflicting tools">
+    Don't use TLP, GNOME Power Profiles, or other CPU frequency managers alongside auto-cpufreq. They will conflict and cause unpredictable behavior.
+  </Accordion>
+  
+  <Accordion title="Consider your CPU driver">
+    If you're having issues with `intel_pstate` or `amd-pstate`, you can switch to `acpi-cpufreq` for more control. See troubleshooting guide.
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Governor Override" icon="sliders" href="/configuration/governor-override">
+    Force specific governors with the --force flag
+  </Card>
+  <Card title="Config File" icon="file-code" href="/configuration/config-file">
+    Define custom governor settings per power source
+  </Card>
+  <Card title="How It Works" icon="gears" href="/advanced/how-it-works">
+    Deep dive into auto-cpufreq's decision-making algorithm
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Fix common governor-related issues
+  </Card>
+</CardGroup>

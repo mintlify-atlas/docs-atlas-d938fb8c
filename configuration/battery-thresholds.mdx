@@ -1,0 +1,458 @@
+---
+title: Battery Charging Thresholds
+description: Configure battery charging thresholds to extend battery lifespan on supported devices
+---
+
+Battery charging thresholds allow you to control when your laptop starts and stops charging, which can significantly extend battery lifespan by reducing wear from staying at 100% charge.
+
+## Overview
+
+Modern lithium-ion batteries last longer when kept between 20-80% charge rather than being constantly charged to 100%. Battery threshold management allows you to:
+
+- Set a **stop threshold** - Maximum charge percentage (e.g., 80%)
+- Set a **start threshold** - Minimum charge before starting to charge again (e.g., 20%)
+- Enable **conservation mode** - Keep battery around 50-60% when always plugged in
+
+<Info>
+  Battery threshold support requires specific hardware and kernel modules. Not all laptops support this feature.
+</Info>
+
+## Supported Devices
+
+auto-cpufreq supports battery threshold management on the following devices:
+
+<AccordionGroup>
+  <Accordion title="Lenovo ThinkPad" icon="laptop">
+    **Required kernel module:** `thinkpad_acpi`
+    
+    **Threshold files:**
+    - `/sys/class/power_supply/BAT*/charge_control_start_threshold`
+    - `/sys/class/power_supply/BAT*/charge_control_end_threshold`
+    - `/sys/class/power_supply/BAT*/charge_start_threshold` (older models)
+    - `/sys/class/power_supply/BAT*/charge_stop_threshold` (older models)
+    
+    **Supported models:** Most ThinkPad models (T, X, P series)
+  </Accordion>
+  
+  <Accordion title="Lenovo IdeaPad" icon="laptop">
+    **Required kernel modules:** `ideapad_acpi` or `ideapad_laptop`
+    
+    **Feature:** Conservation mode (simple on/off)
+    
+    **Conservation mode file:**
+    - `/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode`
+    
+    **Note:** IdeaPad models use conservation mode instead of start/stop thresholds. When enabled, battery is kept around 55-60% charge.
+    
+    **Supported models:** Most IdeaPad models
+  </Accordion>
+  
+  <Accordion title="ASUS Laptops" icon="laptop">
+    **Required kernel module:** `asus_wmi`
+    
+    **Threshold files:**
+    - `/sys/class/power_supply/BAT*/charge_control_end_threshold`
+    
+    **Supported models:** Many ASUS models with modern ASUS WMI support
+    
+    **Note:** Some ASUS models may only support stop threshold, not start threshold.
+  </Accordion>
+</AccordionGroup>
+
+## Configuration
+
+### Lenovo ThinkPad / ASUS
+
+For devices that support start and stop thresholds:
+
+```ini
+[battery]
+# Enable threshold management
+enable_thresholds = true
+
+# Start charging when battery drops to 20%
+start_threshold = 20
+
+# Stop charging when battery reaches 80%
+stop_threshold = 80
+```
+
+<ParamField path="enable_thresholds" type="boolean" required>
+  Enable battery threshold management.
+  
+  **Values:** `true` or `false`
+</ParamField>
+
+<ParamField path="start_threshold" type="integer">
+  Battery percentage at which to start charging.
+  
+  **Range:** 0-99
+  
+  **Special value:** 0 = disabled (will charge as soon as unplugged)
+  
+  **Recommended:** 20-40
+</ParamField>
+
+<ParamField path="stop_threshold" type="integer">
+  Battery percentage at which to stop charging.
+  
+  **Range:** 1-100
+  
+  **Special value:** 100 = disabled (will charge to full)
+  
+  **Recommended:** 60-80
+</ParamField>
+
+### Lenovo IdeaPad
+
+For IdeaPad models that use conservation mode:
+
+```ini
+[battery]
+# Enable threshold management
+enable_thresholds = true
+
+# Enable conservation mode
+ideapad_laptop_conservation_mode = true
+
+# Note: start_threshold and stop_threshold are not used with conservation mode
+# The system will automatically maintain battery around 55-60%
+```
+
+<ParamField path="ideapad_laptop_conservation_mode" type="boolean">
+  Enable IdeaPad conservation mode.
+  
+  **Values:** `true` or `false`
+  
+  **Behavior:** When enabled, battery is maintained around 55-60% charge
+  
+  **Use case:** Laptops that are primarily used while plugged in
+</ParamField>
+
+<Warning>
+  For IdeaPad models, use either conservation mode OR start/stop thresholds, not both. Conservation mode is the recommended approach for IdeaPad devices.
+</Warning>
+
+## Configuration Examples
+
+### Balanced Usage (Recommended)
+
+Good balance between battery longevity and usability:
+
+```ini
+[battery]
+enable_thresholds = true
+start_threshold = 20
+stop_threshold = 80
+```
+
+**Behavior:**
+- Charges to 80% when plugged in
+- Starts charging again when battery drops below 20%
+- Provides 60% usable capacity
+
+### Maximum Longevity
+
+Maximize battery lifespan for devices primarily used plugged in:
+
+```ini
+[battery]
+enable_thresholds = true
+start_threshold = 40
+stop_threshold = 60
+```
+
+**Behavior:**
+- Keeps battery in optimal 40-60% range
+- Minimizes battery wear
+- Reduces usable unplugged capacity
+
+### IdeaPad Conservation Mode
+
+For IdeaPad laptops used primarily while plugged in:
+
+```ini
+[battery]
+enable_thresholds = true
+ideapad_laptop_conservation_mode = true
+```
+
+**Behavior:**
+- Maintains battery around 55-60%
+- Simplest configuration for IdeaPad
+- Ideal for desktop replacement laptops
+
+### Standard Charging
+
+Disable threshold management (default behavior):
+
+```ini
+[battery]
+enable_thresholds = false
+
+# Or omit the battery threshold settings entirely
+```
+
+## Checking Support
+
+### Check if your device supports thresholds:
+
+<Steps>
+  <Step title="Check loaded kernel modules">
+    ```bash
+    lsmod | grep -iE "thinkpad|ideapad|asus"
+    ```
+    
+    Look for: `thinkpad_acpi`, `ideapad_acpi`, `ideapad_laptop`, or `asus_wmi`
+  </Step>
+  
+  <Step title="Check for threshold files">
+    ```bash
+    ls /sys/class/power_supply/BAT*/charge_*threshold* 2>/dev/null
+    ls /sys/class/power_supply/BAT*/charge_control_*threshold* 2>/dev/null
+    ```
+    
+    If files exist, your device supports thresholds.
+  </Step>
+  
+  <Step title="Check for IdeaPad conservation mode">
+    ```bash
+    ls /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode 2>/dev/null
+    ```
+    
+    If file exists, your IdeaPad supports conservation mode.
+  </Step>
+  
+  <Step title="Use auto-cpufreq debug mode">
+    ```bash
+    sudo auto-cpufreq --debug
+    ```
+    
+    Look for battery threshold information in the output.
+  </Step>
+</Steps>
+
+## Viewing Current Thresholds
+
+Check current battery threshold configuration:
+
+```bash
+sudo auto-cpufreq --debug
+```
+
+Look for the "Battery Info" section:
+
+```
+-------------------------------- Battery Info ---------------------------------
+
+battery count = 1
+BAT0 start threshold = 20
+BAT0 stop threshold = 80
+```
+
+Or check directly from sysfs:
+
+```bash
+# View start threshold
+cat /sys/class/power_supply/BAT0/charge_control_start_threshold
+
+# View stop threshold
+cat /sys/class/power_supply/BAT0/charge_control_end_threshold
+
+# View IdeaPad conservation mode (0=off, 1=on)
+cat /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+```
+
+## How It Works
+
+### Threshold Management
+
+1. **Daemon monitors battery status** - auto-cpufreq daemon checks battery configuration every hour
+2. **Applies threshold settings** - Writes threshold values to kernel sysfs files
+3. **Automatic re-application** - Thresholds are re-applied periodically to handle BIOS resets
+
+### Charging Behavior
+
+With thresholds configured (e.g., start=20, stop=80):
+
+```mermaid
+graph LR
+    A[Battery at 100%] -->|Unplug| B[Battery drains]
+    B -->|Reaches 80%| C[No charging]
+    C -->|Continues draining| D[Reaches 20%]
+    D -->|Starts charging| E[Battery charges]
+    E -->|Reaches 80%| F[Stops charging]
+    F -->|Maintains 80%| F
+```
+
+<Info>
+  The laptop must be plugged in for thresholds to work. When unplugged, battery will discharge normally.
+</Info>
+
+## Multiple Batteries
+
+For systems with multiple batteries (e.g., some ThinkPads):
+
+```bash
+# List batteries
+ls /sys/class/power_supply/
+```
+
+```ini
+[battery]
+# Specify which battery to monitor
+battery_device = BAT0
+
+# Thresholds apply to all batteries
+enable_thresholds = true
+start_threshold = 20
+stop_threshold = 80
+```
+
+Threshold settings are applied to **all detected batteries** automatically.
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Desktop Replacement" icon="desktop">
+    **Use case:** Laptop mostly plugged in
+    
+    **Configuration:**
+    ```ini
+    start_threshold = 40
+    stop_threshold = 60
+    ```
+    or enable conservation mode for IdeaPad
+  </Card>
+  
+  <Card title="Mobile Usage" icon="person-walking">
+    **Use case:** Frequently unplugged
+    
+    **Configuration:**
+    ```ini
+    start_threshold = 20
+    stop_threshold = 80
+    ```
+  </Card>
+  
+  <Card title="Balanced" icon="scale-balanced">
+    **Use case:** Mixed usage
+    
+    **Configuration:**
+    ```ini
+    start_threshold = 20
+    stop_threshold = 80
+    ```
+  </Card>
+  
+  <Card title="Maximum Capacity" icon="battery-full">
+    **Use case:** Need full capacity
+    
+    **Configuration:**
+    ```ini
+    enable_thresholds = false
+    ```
+  </Card>
+</CardGroup>
+
+<Tip>
+  A stop threshold of 80% is a good balance - you retain 80% usable capacity while significantly extending battery lifespan.
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Battery charges to 100% despite thresholds">
+    **Possible causes:**
+    
+    1. Daemon not running:
+       ```bash
+       sudo systemctl status auto-cpufreq
+       sudo auto-cpufreq --install
+       ```
+    
+    2. Thresholds not enabled in config:
+       ```bash
+       cat /etc/auto-cpufreq.conf
+       # Ensure enable_thresholds = true
+       ```
+    
+    3. BIOS/firmware override - some laptops have BIOS settings that override software thresholds
+  </Accordion>
+  
+  <Accordion title="Error: no supported battery device found">
+    Your device may not support battery threshold management.
+    
+    **Check support:**
+    ```bash
+    lsmod | grep -iE "thinkpad|ideapad|asus"
+    ls /sys/class/power_supply/BAT*/charge_*threshold*
+    ```
+    
+    If no threshold files exist, your hardware doesn't support this feature.
+  </Accordion>
+  
+  <Accordion title="IdeaPad conservation mode not working">
+    Verify the conservation mode file exists:
+    ```bash
+    ls /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+    ```
+    
+    Check if `ideapad_laptop` or `ideapad_acpi` module is loaded:
+    ```bash
+    lsmod | grep ideapad
+    ```
+    
+    Manually test conservation mode:
+    ```bash
+    # Enable (requires root)
+    echo 1 | sudo tee /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+    
+    # Disable
+    echo 0 | sudo tee /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/conservation_mode
+    ```
+  </Accordion>
+  
+  <Accordion title="Thresholds reset after reboot">
+    Ensure auto-cpufreq daemon is enabled:
+    ```bash
+    sudo systemctl enable auto-cpufreq
+    sudo systemctl status auto-cpufreq
+    ```
+    
+    The daemon automatically re-applies thresholds on startup.
+  </Accordion>
+  
+  <Accordion title="Error: Start threshold must be less than stop threshold">
+    Ensure your configuration has valid threshold values:
+    ```ini
+    # Correct
+    start_threshold = 20  # Lower value
+    stop_threshold = 80   # Higher value
+    
+    # Incorrect
+    start_threshold = 80  # Can't be >= stop_threshold
+    stop_threshold = 20
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Configuration File" href="/configuration/config-file">
+    Complete config file reference
+  </Card>
+  
+  <Card title="Installation" href="/installation">
+    Install auto-cpufreq daemon
+  </Card>
+  
+  <Card title="Daemon Mode" href="/usage/daemon">
+    Run auto-cpufreq as a system service
+  </Card>
+  
+  <Card title="Debug Mode" href="/cli/debug">
+    View battery threshold status
+  </Card>
+</CardGroup>

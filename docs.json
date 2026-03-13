@@ -1,122 +1,117 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "auto-cpufreq",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#e09234",
+    "light": "#988c8a",
+    "dark": "#d9d8d3"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/8570cedb-7e7d-432a-8205-e3e61f24b31b.png",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/AdnanHodzic/auto-cpufreq"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/AdnanHodzic/auto-cpufreq"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Usage",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "usage/modes",
+              "usage/monitor",
+              "usage/live",
+              "usage/daemon",
+              "usage/stats"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Configuration",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "configuration/overview",
+              "configuration/config-file",
+              "configuration/governor-override",
+              "configuration/turbo-mode",
+              "configuration/battery-thresholds",
+              "configuration/power-profiles"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Guides",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/updating",
+              "guides/bluetooth-management",
+              "guides/troubleshooting",
+              "guides/aur-installation",
+              "guides/nixos-installation",
+              "guides/snap-installation"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "CLI Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Commands",
             "pages": [
-              "api-reference/introduction"
+              "cli/overview",
+              "cli/monitor",
+              "cli/live",
+              "cli/install",
+              "cli/remove",
+              "cli/update",
+              "cli/stats",
+              "cli/force",
+              "cli/turbo",
+              "cli/config",
+              "cli/bluetooth",
+              "cli/debug",
+              "cli/version"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Advanced",
+        "groups": [
+          {
+            "group": "Features",
+            "pages": [
+              "advanced/how-it-works",
+              "advanced/governors",
+              "advanced/turbo-boost",
+              "advanced/battery-optimization",
+              "advanced/temperature-management"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Development",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "development/setup",
+              "development/contributing",
+              "development/architecture"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

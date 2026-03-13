@@ -1,0 +1,162 @@
+---
+title: --live
+description: Apply temporary CPU optimizations in real-time
+---
+
+The `--live` flag enables auto-cpufreq to monitor your system and apply CPU optimizations in real-time. Unlike the daemon, changes made in live mode are **temporary** and will not persist after the program exits or system reboot.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --live
+```
+
+## Description
+
+Live mode combines monitoring with active optimization:
+- Displays real-time system information
+- Automatically adjusts CPU governor and frequency settings
+- Applies optimizations based on battery state and system load
+- Changes are temporary and revert when the program exits
+- Ideal for testing before permanent daemon installation
+
+## Requirements
+
+- **Root privileges**: Required to modify CPU settings
+- **Interactive terminal**: Runs continuously until stopped
+
+## Example Usage
+
+### Basic Live Mode
+
+```bash
+sudo auto-cpufreq --live
+```
+
+### Live Mode with Custom Config
+
+```bash
+sudo auto-cpufreq --live --config /etc/auto-cpufreq.conf
+```
+
+## Expected Output
+
+The live view displays:
+- Current CPU frequencies and governor settings
+- Battery status (AC/battery, charging state)
+- Temperature readings
+- Applied optimizations in real-time
+- System load and resource usage
+
+## Behavior
+
+### On Startup
+
+1. Checks for root privileges
+2. Starts battery monitoring daemon
+3. Detects conflicts with:
+   - GNOME Power Profiles (stops it temporarily)
+   - TLP power management
+   - Tuned service (stops it temporarily)
+4. Prompts for confirmation if conflicts detected
+5. Begins applying optimizations
+
+### During Operation
+
+- Continuously monitors system state (every second)
+- Adjusts CPU settings based on:
+  - **Battery state**: More aggressive power saving on battery
+  - **AC power**: Better performance when plugged in
+  - **System load**: Adapts to current workload
+  - **Configuration**: Follows rules in config file if provided
+
+### On Exit
+
+1. Restores original CPU frequency settings
+2. Restarts GNOME Power Profiles (if stopped)
+3. Restarts Tuned service (if stopped)
+4. Cleans up and exits
+
+Press `Ctrl+C` to stop and restore settings.
+
+## Key Differences from Monitor Mode
+
+| Feature | --monitor | --live |
+|---------|-----------|--------|
+| Applies changes | ❌ No | ✅ Yes |
+| Requires root | ✅ Yes | ✅ Yes |
+| Persistent after exit | ❌ No | ❌ No |
+| Stops conflicting services | ❌ No | ✅ Yes (temporarily) |
+| Safe for testing | ✅ Yes | ⚠️ Yes (but applies changes) |
+
+## Use Cases
+
+### Testing Before Installation
+
+Test auto-cpufreq with your workload before installing permanently:
+```bash
+sudo auto-cpufreq --live
+```
+
+Run for several hours during normal use to verify:
+- Battery life improvements
+- Performance is acceptable
+- No stability issues
+
+### Temporary Power Saving
+
+Use live mode for a one-time session when you need extended battery life:
+```bash
+sudo auto-cpufreq --live
+```
+
+Keep it running in a terminal window.
+
+### Configuration Testing
+
+Test a new configuration file before making it permanent:
+```bash
+sudo auto-cpufreq --live --config /path/to/test-config.conf
+```
+
+## Notes
+
+- **Temporary changes only**: All settings revert when you exit
+- **Conflicts handled**: Temporarily stops interfering services
+- **Battery daemon**: Automatically started for battery threshold management
+- **Background optimization**: Runs optimization loop in background thread
+- **Clean exit**: Always restores original settings on exit
+
+## Warnings
+
+### Service Conflicts
+
+Live mode will temporarily stop:
+- **GNOME Power Profiles Daemon**: If detected
+- **Tuned**: If running
+
+These services are automatically restarted when you exit live mode.
+
+### Not for Production Use
+
+Live mode is designed for testing. For permanent optimizations, use:
+```bash
+sudo auto-cpufreq --install
+```
+
+## Related Commands
+
+- [--monitor](/cli/monitor) - View suggestions without applying changes
+- [--install](/cli/install) - Install daemon for permanent optimizations
+- [--stats](/cli/stats) - View daemon statistics
+- [--config](/cli/config) - Use custom configuration file
+
+## Troubleshooting
+
+If live mode exits unexpectedly:
+1. Check that you have root privileges
+2. Verify no other power management tools are actively fighting for control
+3. Run with `--debug` flag for detailed information:
+   ```bash
+   sudo auto-cpufreq --debug
+   ```

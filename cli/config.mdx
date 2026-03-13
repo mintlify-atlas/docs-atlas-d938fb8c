@@ -1,0 +1,353 @@
+---
+title: --config
+description: Use a custom configuration file for auto-cpufreq
+---
+
+The `--config` option allows you to specify a custom configuration file path for auto-cpufreq, overriding the default configuration file location.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --config=/path/to/config.conf
+```
+
+Or with other commands:
+
+```bash
+sudo auto-cpufreq --monitor --config=/path/to/config.conf
+sudo auto-cpufreq --live --config=/path/to/config.conf
+auto-cpufreq --stats --config=/path/to/config.conf
+```
+
+## Description
+
+The config option:
+- Specifies a custom configuration file path
+- Overrides the default `/etc/auto-cpufreq.conf` location
+- Allows testing different configurations
+- Works with monitor, live, stats, and daemon modes
+- Configuration persists for the duration of the command
+
+## Requirements
+
+- **Valid config file**: Must be a properly formatted configuration file
+- **Readable path**: User must have read access to the file
+
+## Default Configuration Path
+
+If `--config` is not specified, auto-cpufreq looks for configuration at:
+
+```
+/etc/auto-cpufreq.conf
+```
+
+## Example Usage
+
+### Monitor with Custom Config
+
+```bash
+sudo auto-cpufreq --monitor --config=/home/user/test-config.conf
+```
+
+### Live Mode with Custom Config
+
+```bash
+sudo auto-cpufreq --live --config=/tmp/experimental-config.conf
+```
+
+### Stats with Custom Config
+
+```bash
+auto-cpufreq --stats --config=/etc/auto-cpufreq-custom.conf
+```
+
+### Daemon with Custom Config
+
+For the daemon to use a custom config permanently, either:
+
+1. **Place config at default location:**
+   ```bash
+   sudo cp myconfig.conf /etc/auto-cpufreq.conf
+   sudo auto-cpufreq --install
+   ```
+
+2. **Or specify path (not persistent after reboot):**
+   ```bash
+   sudo auto-cpufreq --daemon --config=/path/to/config.conf
+   ```
+
+## Configuration File Format
+
+A typical configuration file structure:
+
+```ini
+# auto-cpufreq configuration file
+
+# Settings for AC power
+[charger]
+governor = performance
+scaling_min_freq = 1400000
+scaling_max_freq = 3500000
+turbo = auto
+enable_thresholds = true
+start_threshold = 20
+stop_threshold = 80
+
+# Settings for battery power
+[battery]
+governor = powersave
+scaling_min_freq = 1400000
+scaling_max_freq = 1800000
+turbo = never
+enable_thresholds = false
+```
+
+## Use Cases
+
+### Testing New Configuration
+
+Test a new config without modifying the system configuration:
+
+```bash
+# Create test config
+cp /etc/auto-cpufreq.conf ~/test-config.conf
+nano ~/test-config.conf
+
+# Test in monitor mode
+sudo auto-cpufreq --monitor --config=~/test-config.conf
+
+# Test in live mode
+sudo auto-cpufreq --live --config=~/test-config.conf
+```
+
+### Multiple Configurations for Different Scenarios
+
+Maintain different configs for different use cases:
+
+```bash
+# Maximum performance config
+sudo auto-cpufreq --live --config=/etc/auto-cpufreq-performance.conf
+
+# Maximum battery life config
+sudo auto-cpufreq --live --config=/etc/auto-cpufreq-battery.conf
+
+# Balanced config
+sudo auto-cpufreq --live --config=/etc/auto-cpufreq-balanced.conf
+```
+
+### Per-User Configurations
+
+Different users can test their own configs:
+
+```bash
+sudo auto-cpufreq --monitor --config=/home/user1/my-config.conf
+sudo auto-cpufreq --monitor --config=/home/user2/my-config.conf
+```
+
+### Development and Debugging
+
+When developing or debugging config options:
+
+```bash
+# Test experimental settings
+sudo auto-cpufreq --live --config=/tmp/debug-config.conf
+
+# Compare with different configs
+sudo auto-cpufreq --monitor --config=/tmp/config-v1.conf
+sudo auto-cpufreq --monitor --config=/tmp/config-v2.conf
+```
+
+## Expected Output
+
+When using a config file, you'll see:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Using settings defined in /path/to/config.conf file
+
+[... rest of output ...]
+```
+
+This confirms which configuration file is active.
+
+## Configuration File Discovery
+
+auto-cpufreq searches for configuration in this order:
+
+1. **Path specified with --config flag** (highest priority)
+2. **Default location**: `/etc/auto-cpufreq.conf`
+3. **No config**: Uses built-in defaults
+
+## Notes
+
+- **Not persistent for daemon**: When daemon starts at boot, it uses default location
+- **Real-time validation**: Invalid config options are reported immediately
+- **Readable format**: Uses standard INI file format
+- **Comments supported**: Lines starting with `#` are ignored
+- **Case sensitive**: Section names and keys are case-sensitive
+
+## Configuration Validation
+
+To validate your config without running auto-cpufreq:
+
+```bash
+# Test with monitor mode (read-only)
+sudo auto-cpufreq --monitor --config=/path/to/config.conf
+```
+
+Watch for error messages about:
+- Invalid governor names
+- Out-of-range frequency values
+- Syntax errors
+- Unsupported options
+
+## Common Configuration Sections
+
+### [charger] Section
+
+Settings applied when on AC power:
+- `governor` - CPU governor to use
+- `scaling_min_freq` - Minimum CPU frequency
+- `scaling_max_freq` - Maximum CPU frequency  
+- `turbo` - Turbo boost setting (auto/always/never)
+- `enable_thresholds` - Battery charge thresholds
+- `start_threshold` - When to start charging
+- `stop_threshold` - When to stop charging
+
+### [battery] Section
+
+Settings applied when on battery power:
+- Same options as [charger] section
+- Typically more conservative for power saving
+
+## Warnings
+
+### Invalid Configuration
+
+If config file has errors:
+```
+WARNING: Invalid configuration in /path/to/config.conf
+Falling back to defaults
+```
+
+Check your config file syntax and values.
+
+### Permission Denied
+
+```
+ERROR: Cannot read configuration file: Permission denied
+```
+
+**Solution:**
+```bash
+sudo chmod 644 /path/to/config.conf
+```
+
+### File Not Found
+
+```
+ERROR: Configuration file not found: /path/to/config.conf
+```
+
+Verify the path is correct:
+```bash
+ls -la /path/to/config.conf
+```
+
+## Creating a Configuration File
+
+### From Scratch
+
+```bash
+sudo nano /etc/auto-cpufreq.conf
+```
+
+Add your settings:
+```ini
+[charger]
+governor = performance
+turbo = auto
+
+[battery]  
+governor = powersave
+turbo = never
+```
+
+### From Example
+
+If auto-cpufreq includes example configs:
+```bash
+cp /usr/share/doc/auto-cpufreq/auto-cpufreq.conf.example /etc/auto-cpufreq.conf
+sudo nano /etc/auto-cpufreq.conf
+```
+
+## Making Configuration Permanent
+
+For daemon to use config permanently:
+
+1. **Place config at default location:**
+   ```bash
+   sudo cp myconfig.conf /etc/auto-cpufreq.conf
+   ```
+
+2. **Restart daemon:**
+   ```bash
+   sudo systemctl restart auto-cpufreq
+   ```
+
+3. **Verify it's being used:**
+   ```bash
+   auto-cpufreq --stats
+   ```
+
+   Should show:
+   ```
+   Using settings defined in /etc/auto-cpufreq.conf file
+   ```
+
+## Related Commands
+
+- [--monitor](/cli/monitor) - Monitor with config
+- [--live](/cli/live) - Test config in live mode
+- [--stats](/cli/stats) - View stats with config info
+- [--debug](/cli/debug) - Debug configuration issues
+
+## Troubleshooting
+
+### Config Not Being Used
+
+1. **Check file exists:**
+   ```bash
+   ls -la /etc/auto-cpufreq.conf
+   ```
+
+2. **Verify syntax:**
+   ```bash
+   sudo auto-cpufreq --monitor --config=/etc/auto-cpufreq.conf
+   ```
+
+3. **Check daemon logs:**
+   ```bash
+   sudo journalctl -u auto-cpufreq | grep -i config
+   ```
+
+### Settings Not Applied
+
+If settings in config aren't being applied:
+
+1. **Check governor is supported:**
+   ```bash
+   cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+   ```
+
+2. **Verify frequency ranges:**
+   ```bash
+   cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq
+   cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+   ```
+
+3. **Test with debug output:**
+   ```bash
+   sudo auto-cpufreq --debug
+   ```

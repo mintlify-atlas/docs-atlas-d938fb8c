@@ -1,0 +1,237 @@
+---
+title: "Monitor Mode"
+description: "View CPU optimization suggestions without making system changes"
+---
+
+Monitor mode allows you to see what optimizations auto-cpufreq would apply without actually making any changes to your system. This is perfect for first-time users or when troubleshooting issues.
+
+## Starting Monitor Mode
+
+Run auto-cpufreq with the `--monitor` flag:
+
+```bash
+sudo auto-cpufreq --monitor
+```
+
+<Note>
+  Root privileges are required to read system information, even though no changes are made.
+</Note>
+
+## What Monitor Mode Shows
+
+Monitor mode displays real-time information in two columns:
+
+### Left Column: System & CPU Information
+
+- **System Information**
+  - Linux distribution and version
+  - Kernel version
+  - Processor model
+  - Number of cores
+  - CPU architecture
+  - Active CPU driver
+
+- **Current CPU Stats**
+  - Maximum and minimum CPU frequencies
+  - Per-core information:
+    - Usage percentage
+    - Temperature
+    - Current frequency
+  - CPU fan speed (if available)
+
+### Right Column: Recommendations & Load
+
+- **Battery Stats** (on laptops)
+  - Battery status (charging/discharging)
+  - Battery percentage
+  - AC plugged status
+  - Charging thresholds (if configured)
+
+- **CPU Frequency Scaling**
+  - Current governor in use
+  - **Suggested governor** (highlighted in yellow)
+  - Energy Performance Preference (EPP) settings
+  - Energy Performance Bias (EPB) settings
+
+- **System Statistics**
+  - Total CPU usage
+  - System load averages (1m, 5m, 15m)
+  - Average core temperature
+  - Load status and recommendations
+  - Turbo boost status
+  - **Suggested turbo boost setting** (if different from current)
+
+## Example Output
+
+Here's what you'll see in monitor mode:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Monitor Mode - 14:23:45                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+System Information                    │  Battery Stats
+                                      │  
+Linux distro: Ubuntu 22.04           │  Battery status: discharging
+Linux kernel: 6.5.0-35-generic       │  Battery percentage: 67%
+Processor: 11th Gen Intel Core i7    │  AC plugged: No
+Cores: 8                              │  
+Architecture: x86_64                  │  CPU Frequency Scaling
+Driver: intel_pstate                  │  
+                                      │  Setting to use: "powersave" governor
+Current CPU Stats                     │  Suggesting use of: "powersave" governor
+                                      │  EPP setting: balance_power
+CPU max frequency: 4900 MHz           │  
+CPU min frequency: 400 MHz            │  System Statistics
+                                      │  
+Core    Usage   Temperature Frequency │  Total CPU usage: 23.4 %
+CPU0    15.2%    52 °C      1200 MHz  │  Total system load: 0.87
+CPU1    25.1%    54 °C      1400 MHz  │  Average temp. of all cores: 53.25 °C
+CPU2    18.3%    51 °C      1100 MHz  │  Load optimal (load average: 0.87, 0.92, 1.01)
+CPU3    32.5%    56 °C      1800 MHz  │  Optimal total CPU usage: 23.4%, normal average
+CPU4    12.8%    50 °C      1000 MHz  │  core temp: 53.2°C
+CPU5    28.9%    55 °C      1500 MHz  │  Setting turbo boost: Off
+CPU6    19.4%    52 °C      1200 MHz  │  
+CPU7    21.7%    53 °C      1300 MHz  │
+
+Press Q or Ctrl+C to quit | Use ↑↓ or PageUp/PageDown to scroll
+```
+
+## Understanding Suggestions
+
+Suggestions appear in **yellow** text when the current setting differs from what auto-cpufreq recommends:
+
+<Info>
+  **Governor Suggestions**
+  
+  - **On battery**: Usually suggests `powersave` for energy efficiency
+  - **On AC power**: Usually suggests `performance` or `schedutil` for maximum performance
+  
+  The suggestion is based on your power source and system configuration.
+</Info>
+
+<Info>
+  **Turbo Boost Suggestions**
+  
+  - **Enabled**: When high CPU load is detected or temperature is acceptable
+  - **Disabled**: When load is optimal and temperature can be reduced
+  
+  Turbo boost dynamically adjusts based on workload and thermal conditions.
+</Info>
+
+## Interactive Controls
+
+While in monitor mode:
+
+- **Q** or **Ctrl+C**: Exit monitor mode
+- **↑/↓ arrows**: Scroll up/down
+- **PageUp/PageDown**: Scroll by page
+
+The display automatically refreshes every 2 seconds with updated information.
+
+## Key Differences from Live Mode
+
+<Tabs>
+  <Tab title="Monitor Mode">
+    - ✅ Shows suggestions in yellow
+    - ✅ Displays current governor
+    - ❌ Does NOT change governor
+    - ❌ Does NOT change turbo boost
+    - ❌ Does NOT apply any optimizations
+    
+    **Use case**: Safe observation and learning
+  </Tab>
+  <Tab title="Live Mode">
+    - ❌ No yellow suggestions (shows actions taken)
+    - ✅ Displays governor being set
+    - ✅ Changes governor in real-time
+    - ✅ Changes turbo boost dynamically
+    - ✅ Applies all optimizations
+    
+    **Use case**: Testing and temporary optimization
+  </Tab>
+</Tabs>
+
+## Common Use Cases
+
+### 1. First-Time Evaluation
+
+Before installing auto-cpufreq, run monitor mode to understand:
+- What governors are available on your system
+- What optimizations would be applied
+- How your system load affects recommendations
+
+### 2. Troubleshooting
+
+If you're experiencing issues with daemon mode:
+1. Stop the daemon: `sudo auto-cpufreq --remove`
+2. Run monitor mode to observe behavior
+3. Check if suggestions align with your expectations
+
+### 3. Configuration Testing
+
+When using a custom configuration file:
+
+```bash
+sudo auto-cpufreq --monitor --config=/path/to/auto-cpufreq.conf
+```
+
+Monitor mode will show suggestions based on your custom settings.
+
+### 4. Learning and Education
+
+Monitor mode is excellent for understanding:
+- How CPU governors work
+- When turbo boost is beneficial
+- The relationship between load, temperature, and frequency
+- How power source affects CPU management
+
+## Compatibility Warnings
+
+When starting monitor mode, auto-cpufreq checks for conflicting services:
+
+<Warning>
+  **TLP Service Detected**
+  
+  If TLP is running, you'll be prompted to continue. TLP conflicts with auto-cpufreq optimizations.
+  
+  Consider disabling TLP before using auto-cpufreq:
+  ```bash
+  sudo systemctl mask tlp.service
+  ```
+</Warning>
+
+<Warning>
+  **GNOME Power Profiles Daemon**
+  
+  The GNOME Power Profiles daemon may conflict with CPU frequency scaling. You'll be notified if it's detected.
+</Warning>
+
+## Exiting Monitor Mode
+
+To exit monitor mode:
+
+1. Press **Q** or **Ctrl+C**
+2. Monitor mode stops immediately
+3. No cleanup needed (no changes were made)
+
+<Check>
+  Your system state remains exactly as it was before running monitor mode.
+</Check>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Try Live Mode" icon="play" href="/usage/live">
+    Ready to test optimizations? Try live mode next
+  </Card>
+  <Card title="Install Daemon" icon="server" href="/usage/daemon">
+    Satisfied with suggestions? Install the daemon
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/config-file">
+    Customize auto-cpufreq behavior
+  </Card>
+  <Card title="Operating Modes" icon="list" href="/usage/modes">
+    Back to modes overview
+  </Card>
+</CardGroup>

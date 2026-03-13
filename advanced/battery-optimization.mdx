@@ -1,0 +1,355 @@
+---
+title: "Battery Optimization"
+description: "How auto-cpufreq extends battery life through intelligent power management"
+---
+
+## Overview
+
+auto-cpufreq extends laptop battery life by automatically adjusting CPU settings when running on battery power. This page explains the strategies used and how to maximize battery savings.
+
+## Battery Detection
+
+auto-cpufreq monitors battery state in real-time using the power supply subsystem:
+
+```python
+# From auto_cpufreq/core.py
+def charging():
+    """
+    Determine if the system is plugged into AC power
+    """
+    for power_supply in os.listdir(POWER_SUPPLY_DIR):
+        supply_type_path = os.path.join(POWER_SUPPLY_DIR, power_supply, 'type')
+        if os.path.exists(supply_type_path):
+            with open(supply_type_path) as f:
+                if f.read().strip() == 'Mains':
+                    status_path = os.path.join(POWER_SUPPLY_DIR, power_supply, 'online')
+                    with open(status_path) as f:
+                        return f.read().strip() == '1'
+    return False
+```
+
+The function checks `/sys/class/power_supply/` for AC adapter status and switches profiles immediately when power state changes.
+
+## Battery Mode Optimizations
+
+When running on battery, auto-cpufreq applies several optimizations:
+
+### 1. Governor Switching
+
+```ini
+[battery]
+governor = powersave
+```
+
+The `powersave` governor reduces CPU frequency to minimize power consumption. With modern drivers (intel_pstate, amd-pstate), this still allows dynamic scaling but biases toward lower frequencies.
+
+### 2. Turbo Boost Disabling
+
+```ini
+[battery]
+turbo = never  # or auto
+```
+
+Disabling turbo boost on battery can extend battery life by **20-40%** for CPU-intensive tasks:
+
+- Reduces peak power consumption
+- Lowers CPU temperatures (less fan usage)
+- Prevents thermal throttling
+
+### 3. Frequency Scaling Limits
+
+```ini
+[battery]
+scaling_max_freq = 2000000  # Limit to 2 GHz
+```
+
+Capping maximum CPU frequency reduces power consumption:
+
+```python
+# auto-cpufreq writes to sysfs
+for cpu in range(CPUS):
+    freq_path = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_max_freq"
+    with open(freq_path, "w") as f:
+        f.write(str(max_freq))
+```
+
+### 4. Energy Performance Preference (EPP)
+
+```ini
+[battery]
+energy_performance_preference = power
+```
+
+EPP hints to the CPU firmware to favor power savings:
+
+- `power`: Maximum power savings
+- `balance_power`: Balanced, favoring power
+- `balance_performance`: Balanced, favoring performance
+- `performance`: Maximum performance
+
+Modern Intel CPUs (6th gen+) support EPP with intel_pstate driver.
+
+### 5. Energy Performance Bias (EPB)
+
+```ini
+[battery]
+energy_perf_bias = power  # or numeric value 0-15
+```
+
+EPB is an older mechanism for similar power/performance hints:
+
+- `0` or `performance`: Maximum performance
+- `15` or `power`: Maximum power savings
+- `6` or `default`: Balanced
+
+Used on older Intel CPUs and as a fallback.
+
+## Battery Charging Thresholds
+
+One advanced feature is battery charging threshold management to extend battery lifespan:
+
+### Supported Devices
+
+<CardGroup cols={2}>
+  <Card title="Lenovo ThinkPad" icon="laptop">
+    Uses `thinkpad_acpi` kernel module
+  </Card>
+  <Card title="Lenovo IdeaPad" icon="laptop">
+    Uses `ideapad_acpi` or `ideapad_laptop` module
+  </Card>
+  <Card title="ASUS Laptops" icon="laptop">
+    Uses `asus_wmi` kernel module
+  </Card>
+  <Card title="Other Vendors" icon="question">
+    Support varies - check if your laptop has ACPI battery control
+  </Card>
+</CardGroup>
+
+### Configuration
+
+```ini
+[battery]
+enable_thresholds = true
+start_threshold = 20   # Start charging at 20%
+stop_threshold = 80    # Stop charging at 80%
+```
+
+This prevents charging above 80% and resumes charging below 20%, which:
+
+- Reduces battery wear from full charge cycles
+- Extends overall battery lifespan
+- Especially useful for laptops that stay plugged in most of the time
+
+**Implementation** (from `auto_cpufreq/battery_scripts/battery.py`):
+
+```python
+def set_battery_threshold(start, stop):
+    """
+    Set battery charging thresholds
+    """
+    # Example for ThinkPad
+    with open("/sys/class/power_supply/BAT0/charge_start_threshold", "w") as f:
+        f.write(str(start))
+    with open("/sys/class/power_supply/BAT0/charge_stop_threshold", "w") as f:
+        f.write(str(stop))
+```
+
+See [Battery Thresholds](/configuration/battery-thresholds) for full details.
+
+### IdeaPad Conservation Mode
+
+Lenovo IdeaPad laptops support a special "conservation mode":
+
+```ini
+[battery]
+ideapad_laptop_conservation_mode = true
+```
+
+This limits maximum charge to 60-80% (depending on model) without requiring specific threshold values.
+
+## Power Supply Ignore List
+
+Some peripherals (controllers, headphones) report as power supplies and can confuse battery detection:
+
+```ini
+[power_supply_ignore_list]
+xbox_controller = xbox_one
+ps5_controller = sony_controller_battery
+headphones = bluetooth_battery_00_11_22
+```
+
+auto-cpufreq will ignore these when determining if the system is on battery power.
+
+## Maximizing Battery Life
+
+### Recommended Configuration
+
+For maximum battery savings:
+
+```ini
+[battery]
+governor = powersave
+turbo = never
+energy_performance_preference = power
+scaling_max_freq = 1800000  # Adjust based on your CPU
+enable_thresholds = true
+start_threshold = 20
+stop_threshold = 80
+```
+
+### Additional Strategies
+
+<Steps>
+  <Step title="Install auto-cpufreq daemon">
+    Use `sudo auto-cpufreq --install` to enable persistent optimizations. Live mode doesn't persist across reboots.
+  </Step>
+  
+  <Step title="Disable Bluetooth on boot">
+    ```bash
+    sudo auto-cpufreq --bluetooth_boot_off
+    ```
+    
+    Bluetooth consumes power even when not in use. You can still enable it manually when needed.
+  </Step>
+  
+  <Step title="Monitor with --stats">
+    ```bash
+    auto-cpufreq --stats
+    ```
+    
+    Regularly check stats to ensure optimizations are being applied correctly.
+  </Step>
+  
+  <Step title="Disable conflicting services">
+    Services like GNOME Power Profiles or TLP can interfere:
+    
+    ```bash
+    sudo systemctl mask power-profiles-daemon
+    sudo systemctl stop tlp
+    sudo systemctl disable tlp
+    ```
+  </Step>
+</Steps>
+
+## Expected Battery Life Improvements
+
+Battery life improvement varies based on workload:
+
+<Tabs>
+  <Tab title="Light Workload">
+    **Example**: Web browsing, document editing
+    
+    - Turbo disabled: **+10-20% battery life**
+    - Powersave governor: **+5-15% battery life**
+    - Combined: **+15-30% battery life**
+  </Tab>
+  
+  <Tab title="Medium Workload">
+    **Example**: Video playback, light development
+    
+    - Turbo disabled: **+20-30% battery life**
+    - Powersave governor: **+10-20% battery life**
+    - Combined: **+30-50% battery life**
+  </Tab>
+  
+  <Tab title="Heavy Workload">
+    **Example**: Compilation, video encoding
+    
+    - Turbo disabled: **+30-50% battery life**
+    - Powersave governor: **+15-25% battery life**
+    - Combined: **+45-70% battery life**
+    
+    <Warning>
+      Performance will be reduced for CPU-intensive tasks. This tradeoff prioritizes battery life.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Monitoring Battery Usage
+
+### Using auto-cpufreq Stats
+
+```bash
+auto-cpufreq --stats
+```
+
+The stats output shows:
+
+- Current battery state (charging/discharging)
+- Battery percentage
+- Power consumption (if available)
+- Current governor and frequency
+- Turbo boost status
+
+### Using System Tools
+
+```bash
+# Battery status
+upower -i /org/freedesktop/UPower/devices/battery_BAT0
+
+# Power consumption (requires powertop)
+sudo powertop
+
+# Current CPU frequency
+watch -n 1 "grep MHz /proc/cpuinfo"
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Battery life not improving">
+    Possible causes:
+    - Conflicting power management tools (check for TLP, power-profiles-daemon)
+    - Config file not being read (check `/etc/auto-cpufreq.conf`)
+    - Daemon not running (`systemctl status auto-cpufreq`)
+    - Battery itself is degraded (check battery health)
+  </Accordion>
+  
+  <Accordion title="Performance too low on battery">
+    You can tune the battery profile:
+    
+    ```ini
+    [battery]
+    governor = schedutil  # More responsive than powersave
+    turbo = auto          # Allow turbo on high load
+    ```
+  </Accordion>
+  
+  <Accordion title="Battery thresholds not working">
+    Check if your device is supported:
+    
+    ```bash
+    lsmod | grep -E "thinkpad_acpi|ideapad|asus_wmi"
+    ```
+    
+    If the module isn't loaded, your device may not support this feature.
+  </Accordion>
+  
+  <Accordion title="Auto-cpufreq not detecting battery">
+    Check power supply detection:
+    
+    ```bash
+    ls /sys/class/power_supply/
+    cat /sys/class/power_supply/BAT0/status
+    ```
+    
+    You may need to add devices to the ignore list if peripherals are interfering.
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Battery Thresholds" icon="battery-half" href="/configuration/battery-thresholds">
+    Configure charging thresholds to extend battery lifespan
+  </Card>
+  <Card title="Config File" icon="file-code" href="/configuration/config-file">
+    Full configuration file reference
+  </Card>
+  <Card title="Turbo Boost" icon="bolt" href="/advanced/turbo-boost">
+    Understanding and managing turbo boost
+  </Card>
+  <Card title="How It Works" icon="gears" href="/advanced/how-it-works">
+    Deep dive into auto-cpufreq's optimization algorithm
+  </Card>
+</CardGroup>

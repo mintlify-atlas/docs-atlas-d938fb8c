@@ -1,0 +1,393 @@
+---
+title: Turbo Mode Control
+description: Manage CPU turbo boost behavior with the --turbo flag
+---
+
+The `--turbo` flag allows you to control CPU turbo boost (also called Turbo Core on AMD) behavior, overriding automatic turbo management.
+
+## Overview
+
+CPU turbo boost temporarily increases CPU frequency above the base clock speed for better performance. While this provides performance benefits, it also increases power consumption and heat generation.
+
+auto-cpufreq can automatically manage turbo boost based on power state, or you can manually control it.
+
+<Info>
+  Turbo boost is a hardware feature. Not all CPUs support it. Check your CPU specifications to confirm turbo boost availability.
+</Info>
+
+## Usage
+
+### Auto Mode (Default)
+
+Let auto-cpufreq automatically manage turbo boost:
+
+```bash
+sudo auto-cpufreq --turbo=auto
+```
+
+**Behavior:**
+- Enables turbo boost on AC power (charger)
+- Disables turbo boost on battery power
+- Can be customized via [configuration file](/configuration/config-file)
+
+This is the default mode and provides a good balance between performance and battery life.
+
+### Always Enable Turbo
+
+Force turbo boost to be always enabled:
+
+```bash
+sudo auto-cpufreq --turbo=always
+```
+
+**Use cases:**
+- Maximum performance needed at all times
+- CPU-intensive workloads (rendering, compilation, gaming)
+- System is always plugged in
+- Adequate cooling is available
+
+<Warning>
+  Enabling turbo boost continuously will increase power consumption and heat generation, potentially reducing battery life significantly.
+</Warning>
+
+### Always Disable Turbo
+
+Force turbo boost to be always disabled:
+
+```bash
+sudo auto-cpufreq --turbo=never
+```
+
+**Use cases:**
+- Maximizing battery life
+- Reducing heat and fan noise
+- Thermal throttling issues
+- Lower power consumption is priority
+- Consistent performance without frequency spikes
+
+<Info>
+  Disabling turbo boost reduces maximum performance but provides more predictable CPU behavior and better thermal characteristics.
+</Info>
+
+## Persistence
+
+Turbo boost overrides persist across reboots and daemon restarts.
+
+```bash
+# Disable turbo permanently
+sudo auto-cpufreq --turbo=never
+
+# Reboot system
+sudo reboot
+
+# Turbo remains disabled after reboot
+```
+
+The turbo override state is stored in: `/var/run/auto-cpufreq.turbo_override.pickle`
+
+### Removing Override
+
+To remove the turbo override and return to automatic management:
+
+```bash
+sudo auto-cpufreq --turbo=auto
+```
+
+This removes the override file and restores automatic turbo management based on power state and configuration.
+
+## Configuration File Integration
+
+You can also set turbo behavior in the configuration file:
+
+```ini
+[charger]
+turbo = auto
+
+[battery]
+turbo = never
+```
+
+The `--turbo` flag overrides these configuration file settings.
+
+**Priority order:**
+1. `--turbo` command-line flag (highest priority)
+2. Configuration file settings
+3. Default automatic behavior
+
+<Tip>
+  Use the configuration file for persistent per-power-state settings, and the `--turbo` flag for temporary overrides.
+</Tip>
+
+## Checking Turbo Status
+
+View current turbo boost status:
+
+```bash
+sudo auto-cpufreq --stats
+```
+
+Look for the turbo status in the output:
+
+```
+Turbo boost: enabled
+```
+
+or
+
+```
+Turbo boost: disabled
+```
+
+### Direct System Check
+
+You can also check turbo status directly from the system:
+
+<CodeGroup>
+```bash Intel CPUs
+# Check if turbo is disabled (0 = enabled, 1 = disabled)
+cat /sys/devices/system/cpu/intel_pstate/no_turbo
+```
+
+```bash AMD CPUs
+# Check boost status (0 = enabled, 1 = disabled)
+cat /sys/devices/system/cpu/cpufreq/boost
+```
+</CodeGroup>
+
+## Examples
+
+### Performance Gaming Setup
+
+```bash
+# Force maximum performance for gaming
+sudo auto-cpufreq --force=performance
+sudo auto-cpufreq --turbo=always
+
+# Game with maximum CPU performance
+# ...
+
+# Reset after gaming session
+sudo auto-cpufreq --force=reset
+sudo auto-cpufreq --turbo=auto
+```
+
+### Battery Conservation
+
+```bash
+# Maximize battery life for long flight
+sudo auto-cpufreq --force=powersave
+sudo auto-cpufreq --turbo=never
+
+# Work on battery
+# ...
+
+# Reset when plugged in
+sudo auto-cpufreq --force=reset
+sudo auto-cpufreq --turbo=auto
+```
+
+### Quiet Operation
+
+```bash
+# Reduce fan noise in library/office
+sudo auto-cpufreq --turbo=never
+
+# Turbo disabled = less heat = quieter fans
+
+# Re-enable when needed
+sudo auto-cpufreq --turbo=auto
+```
+
+### Build/Compilation Workflow
+
+```bash
+# Enable turbo for faster compilation
+sudo auto-cpufreq --turbo=always
+
+# Run build
+make -j$(nproc)
+
+# Disable turbo after build to save power
+sudo auto-cpufreq --turbo=never
+```
+
+## Turbo Boost Technology
+
+<AccordionGroup>
+  <Accordion title="Intel Turbo Boost">
+    Intel Turbo Boost Technology automatically increases CPU frequency when:
+    - Operating system requests higher performance
+    - Thermal headroom is available
+    - Power budget allows
+    
+    **Controlled via:** `/sys/devices/system/cpu/intel_pstate/no_turbo`
+  </Accordion>
+  
+  <Accordion title="AMD Turbo Core / Precision Boost">
+    AMD's equivalent to Intel Turbo Boost, increases frequency dynamically.
+    
+    **Controlled via:** `/sys/devices/system/cpu/cpufreq/boost`
+  </Accordion>
+  
+  <Accordion title="Checking CPU Support">
+    Verify your CPU supports turbo:
+    
+    ```bash
+    # Intel
+    lscpu | grep -i turbo
+    
+    # AMD
+    lscpu | grep -i boost
+    
+    # Or check CPU specs
+    cat /proc/cpuinfo | grep -i "model name"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Performance Impact
+
+<Tabs>
+  <Tab title="Turbo Enabled">
+    **Advantages:**
+    - Higher peak performance
+    - Better single-thread performance
+    - Faster burst workloads
+    - Responsive for interactive tasks
+    
+    **Disadvantages:**
+    - Higher power consumption
+    - Increased heat generation
+    - Variable CPU frequency
+    - Shorter battery life
+  </Tab>
+  
+  <Tab title="Turbo Disabled">
+    **Advantages:**
+    - Lower power consumption
+    - Reduced heat generation
+    - Longer battery life
+    - Quieter operation (less fan noise)
+    - More predictable performance
+    
+    **Disadvantages:**
+    - Lower peak performance
+    - Slower burst workloads
+    - Reduced single-thread performance
+  </Tab>
+</Tabs>
+
+## Daemon Requirement
+
+<Warning>
+  Turbo override requires the auto-cpufreq daemon to be installed and running.
+</Warning>
+
+Check daemon status:
+
+```bash
+sudo systemctl status auto-cpufreq
+```
+
+If the daemon is not installed:
+
+```bash
+sudo auto-cpufreq --install
+```
+
+## Combining with Governor Override
+
+You can combine turbo control with governor override:
+
+```bash
+# Maximum performance configuration
+sudo auto-cpufreq --force=performance --turbo=always
+
+# Maximum battery life configuration
+sudo auto-cpufreq --force=powersave --turbo=never
+
+# Reset everything to automatic
+sudo auto-cpufreq --force=reset --turbo=auto
+```
+
+<Tip>
+  The order of flags doesn't matter. You can set them in any order.
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Turbo override doesn't work">
+    Ensure your CPU supports turbo boost:
+    ```bash
+    lscpu | grep -iE "turbo|boost"
+    cat /proc/cpuinfo | grep "model name"
+    ```
+    
+    Check if turbo control files exist:
+    ```bash
+    # Intel
+    ls -la /sys/devices/system/cpu/intel_pstate/no_turbo
+    
+    # AMD
+    ls -la /sys/devices/system/cpu/cpufreq/boost
+    ```
+  </Accordion>
+  
+  <Accordion title="Turbo settings don't persist">
+    Verify the daemon is installed and running:
+    ```bash
+    sudo systemctl status auto-cpufreq
+    sudo auto-cpufreq --install
+    ```
+  </Accordion>
+  
+  <Accordion title="Performance not improving with turbo enabled">
+    Check if thermal throttling is occurring:
+    ```bash
+    # Monitor temperatures
+    watch -n 1 sensors
+    
+    # Check for throttling
+    dmesg | grep -i "temperature\|thermal"
+    ```
+    
+    If CPU is overheating, turbo boost may be automatically disabled by hardware.
+  </Accordion>
+  
+  <Accordion title="Battery drains too fast with turbo">
+    Use `auto` mode or `never` on battery:
+    ```bash
+    sudo auto-cpufreq --turbo=auto
+    ```
+    
+    Or configure per power state in config file:
+    ```ini
+    [charger]
+    turbo = auto
+    
+    [battery]
+    turbo = never
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Governor Override" href="/configuration/governor-override">
+    Control CPU frequency scaling governors
+  </Card>
+  
+  <Card title="Configuration File" href="/configuration/config-file">
+    Set turbo behavior per power state
+  </Card>
+  
+  <Card title="Stats Mode" href="/usage/stats">
+    Monitor turbo boost status in real-time
+  </Card>
+  
+  <Card title="Performance Tuning" href="/configuration/turbo-mode">
+    Optimize system performance
+  </Card>
+</CardGroup>

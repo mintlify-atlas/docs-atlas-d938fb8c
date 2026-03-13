@@ -1,0 +1,348 @@
+---
+title: "Turbo Boost Management"
+description: "Understanding CPU turbo boost and how auto-cpufreq controls it"
+---
+
+## What Is Turbo Boost?
+
+Turbo Boost is a technology that allows CPUs to temporarily run at higher frequencies than their base clock speed when thermal and power conditions allow.
+
+### Intel Turbo Boost
+
+- Allows CPU cores to exceed base frequency
+- Automatically enabled when system load increases
+- Limited by temperature, power consumption, and TDP
+- Available on most Intel Core processors
+
+### AMD Turbo Core / Precision Boost
+
+- AMD's equivalent to Intel Turbo Boost
+- Similar behavior: dynamic frequency increases
+- Available on modern AMD Ryzen and EPYC processors
+
+## Why Manage Turbo Boost?
+
+<CardGroup cols={2}>
+  <Card title="Battery Life" icon="battery-full">
+    Disabling turbo boost on battery can significantly extend battery life by reducing power consumption.
+  </Card>
+  <Card title="Temperature Control" icon="temperature-half">
+    Turbo boost generates more heat. Disabling it prevents thermal throttling on systems with poor cooling.
+  </Card>
+  <Card title="Performance" icon="gauge-high">
+    Enabling turbo boost provides maximum CPU performance for demanding tasks.
+  </Card>
+  <Card title="Consistency" icon="equals">
+    Some workloads benefit from consistent base frequency rather than variable turbo frequencies.
+  </Card>
+</CardGroup>
+
+## How auto-cpufreq Manages Turbo
+
+### Default Behavior
+
+auto-cpufreq automatically enables/disables turbo boost based on power source:
+
+```python
+# Simplified logic from core.py
+def set_autofreq():
+    if charging():
+        # On AC power - enable turbo
+        turbo(True)
+    else:
+        # On battery - disable turbo
+        turbo(False)
+```
+
+<Tabs>
+  <Tab title="On AC Power">
+    **Turbo: Enabled**
+    
+    When plugged into AC power:
+    - Turbo boost is enabled by default
+    - CPU can reach maximum boost frequencies
+    - Optimal for performance-intensive tasks
+    - Power consumption is not a concern
+  </Tab>
+  
+  <Tab title="On Battery">
+    **Turbo: Disabled**
+    
+    When running on battery:
+    - Turbo boost is disabled by default
+    - CPU limited to base frequency
+    - Significantly extends battery life
+    - Still provides good performance for most tasks
+  </Tab>
+</Tabs>
+
+### Turbo Boost Control Interface
+
+auto-cpufreq controls turbo boost through kernel interfaces:
+
+```bash
+# Intel CPUs (intel_pstate)
+/sys/devices/system/cpu/intel_pstate/no_turbo
+# 0 = turbo enabled, 1 = turbo disabled
+
+# AMD CPUs (amd-pstate or acpi-cpufreq)  
+/sys/devices/system/cpu/cpufreq/boost
+# 1 = turbo enabled, 0 = turbo disabled
+```
+
+## Configuration Options
+
+### Auto Mode (Default)
+
+Let auto-cpufreq decide based on power source:
+
+```bash
+sudo auto-cpufreq --turbo=auto
+```
+
+Or in config file:
+
+```ini
+[charger]
+turbo = auto
+
+[battery]
+turbo = auto
+```
+
+With `auto` mode, auto-cpufreq makes intelligent decisions based on:
+- Power source (AC vs battery)
+- System load
+- CPU temperature
+
+### Always Enable
+
+Force turbo boost to always be enabled:
+
+```bash
+sudo auto-cpufreq --turbo=always
+```
+
+Or in config file:
+
+```ini
+[charger]
+turbo = always
+
+[battery]
+turbo = always  # Not recommended on battery!
+```
+
+<Warning>
+  Forcing turbo to "always" on battery will significantly reduce battery life. Use only when maximum performance is essential.
+</Warning>
+
+### Never Enable
+
+Force turbo boost to always be disabled:
+
+```bash
+sudo auto-cpufreq --turbo=never
+```
+
+Or in config file:
+
+```ini
+[charger]
+turbo = never
+
+[battery]  
+turbo = never
+```
+
+**Use cases for "never":**
+- Thermal throttling issues (poor laptop cooling)
+- Desire for consistent CPU frequencies (audio production, gaming)
+- Extending battery life to maximum
+- Reducing fan noise
+
+## Checking Turbo Boost Status
+
+You can check if turbo boost is currently enabled:
+
+### Intel CPUs
+
+```bash
+# Check turbo status (0 = enabled, 1 = disabled)
+cat /sys/devices/system/cpu/intel_pstate/no_turbo
+
+# Enable turbo
+echo 0 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
+
+# Disable turbo
+echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
+```
+
+### AMD CPUs
+
+```bash  
+# Check turbo status (1 = enabled, 0 = disabled)
+cat /sys/devices/system/cpu/cpufreq/boost
+
+# Enable turbo
+echo 1 | sudo tee /sys/devices/system/cpu/cpufreq/boost
+
+# Disable turbo
+echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost
+```
+
+### Using auto-cpufreq
+
+```bash
+# Monitor mode shows turbo status
+sudo auto-cpufreq --monitor
+
+# Stats mode (if daemon is running)
+auto-cpufreq --stats
+```
+
+## Performance Impact
+
+### Benchmarks
+
+Turbo boost can provide **20-40% performance improvement** in single-threaded workloads and **15-25%** in multi-threaded workloads, depending on:
+
+- CPU model and generation
+- Thermal headroom
+- Power delivery
+- Workload characteristics
+
+### Battery Life Impact
+
+Disabling turbo boost on battery can extend battery life by:
+
+- **20-40%** for CPU-intensive tasks
+- **10-20%** for mixed workloads
+- **5-10%** for light tasks (web browsing, document editing)
+
+The impact varies based on workload. CPU-bound tasks benefit most from disabling turbo.
+
+## Temperature Management
+
+auto-cpufreq can dynamically disable turbo boost if CPU temperature exceeds safe thresholds:
+
+```python
+# Simplified temperature check from core.py
+def check_temperature():
+    temps = psutil.sensors_temperatures()
+    if 'coretemp' in temps:
+        avg_temp = sum([t.current for t in temps['coretemp']]) / len(temps['coretemp'])
+        
+        if avg_temp > 80:  # High temperature
+            # Disable turbo to reduce heat
+            turbo(False)
+            print("Turbo disabled due to high temperature")
+```
+
+This prevents thermal throttling and extends hardware lifespan.
+
+## Configuration Examples
+
+### Maximum Battery Life
+
+```ini
+[battery]
+governor = powersave
+turbo = never
+scaling_max_freq = 2000000  # Limit to 2 GHz
+```
+
+### Maximum Performance (AC)
+
+```ini
+[charger]
+governor = performance  
+turbo = always
+energy_performance_preference = performance
+```
+
+### Balanced (Recommended)
+
+```ini
+[charger]
+governor = performance
+turbo = auto
+
+[battery]
+governor = powersave
+turbo = auto
+```
+
+### Quiet/Cool Operation
+
+```ini
+[charger]
+governor = powersave
+turbo = never
+scaling_max_freq = 2400000
+
+[battery]
+governor = powersave
+turbo = never
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Turbo boost not working">
+    Check if your CPU supports turbo boost:
+    
+    ```bash
+    # Intel
+    cat /sys/devices/system/cpu/intel_pstate/turbo_pct
+    
+    # AMD  
+    lscpu | grep "CPU max MHz"
+    ```
+    
+    If max MHz is higher than base frequency, turbo is supported.
+  </Accordion>
+  
+  <Accordion title="Turbo changes not persisting">
+    Make sure auto-cpufreq daemon is running:
+    
+    ```bash
+    systemctl status auto-cpufreq
+    ```
+    
+    Turbo overrides set with `--turbo` flag require the daemon to persist.
+  </Accordion>
+  
+  <Accordion title="High temperatures with turbo enabled">
+    Consider:
+    - Using `turbo = auto` to allow dynamic disabling
+    - Setting `turbo = never` in config
+    - Cleaning laptop vents and fans
+    - Repasting CPU thermal compound
+  </Accordion>
+  
+  <Accordion title="Turbo disabled even when forced to always">
+    Other factors can disable turbo:
+    - BIOS settings
+    - Thermal throttling
+    - Power limits (TDP)
+    - Conflicting power management tools
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Turbo Override" icon="bolt" href="/configuration/turbo-mode">
+    Configure turbo boost behavior with --turbo flag
+  </Card>
+  <Card title="Temperature Management" icon="temperature-half" href="/advanced/temperature-management">
+    How auto-cpufreq manages CPU temperatures
+  </Card>
+  <Card title="Config File" icon="file-code" href="/configuration/config-file">
+    Set turbo boost options in configuration file
+  </Card>
+  <Card title="Battery Optimization" icon="battery-full" href="/advanced/battery-optimization">
+    Optimize battery life with smart turbo management
+  </Card>
+</CardGroup>

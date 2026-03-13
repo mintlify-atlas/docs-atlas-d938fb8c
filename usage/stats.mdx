@@ -1,0 +1,508 @@
+---
+title: "Stats Mode"
+description: "View live statistics of CPU optimizations made by the auto-cpufreq daemon"
+---
+
+Stats mode allows you to view real-time statistics and activity of the auto-cpufreq daemon while it runs in the background.
+
+## Viewing Stats
+
+Display live daemon statistics:
+
+```bash
+auto-cpufreq --stats
+```
+
+<Note>
+  The `--stats` command does **not** require sudo privileges - it only reads the stats file.
+</Note>
+
+## Prerequisites
+
+<Warning>
+  **Daemon Must Be Running**
+  
+  Stats mode requires the auto-cpufreq daemon to be installed and running:
+  
+  ```bash
+  # Install daemon first if not already installed
+  sudo auto-cpufreq --install
+  
+  # Then view stats
+  auto-cpufreq --stats
+  ```
+  
+  If the daemon is not running, you'll see an error:
+  ```text
+  ERROR: auto-cpufreq is not running in daemon mode.
+  
+  Make sure to run "sudo auto-cpufreq --install" first
+  ```
+</Warning>
+
+## Stats Display
+
+The stats output shows a continuously updating view of daemon activity:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Stats Mode - 16:34:22                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+System Information                    │  Battery Stats
+                                      │  
+Linux distro: Arch Linux             │  Battery status: discharging
+Linux kernel: 6.7.9-arch1-1          │  Battery percentage: 78%
+Processor: Intel Core i5-1135G7      │  AC plugged: No
+Cores: 8                              │  Charging start threshold: 20
+Architecture: x86_64                  │  Charging stop threshold: 80
+Driver: intel_pstate                  │  
+                                      │  CPU Frequency Scaling
+Using settings defined in             │  
+/etc/auto-cpufreq.conf file           │  Setting to use: "powersave" governor
+                                      │  EPP setting: balance_power
+Current CPU Stats                     │  Setting to use: "balance_power" EPB
+                                      │  
+CPU max frequency: 4200 MHz           │  System Statistics
+CPU min frequency: 400 MHz            │  
+                                      │  Total CPU usage: 12.3 %
+Core    Usage   Temperature Frequency │  Total system load: 0.42
+CPU0     8.5%    48 °C       800 MHz  │  Average temp. of all cores: 47.88 °C
+CPU1    14.2%    49 °C      1000 MHz  │  Load optimal (load average: 0.42, 0.38, 0.35)
+CPU2     9.8%    47 °C       900 MHz  │  Optimal total CPU usage: 12.3%, normal average
+CPU3    18.5%    50 °C      1200 MHz  │  core temp: 47.9°C
+CPU4    11.2%    48 °C       950 MHz  │  Setting turbo boost: Off
+CPU5    15.7%    49 °C      1100 MHz  │  
+CPU6     7.3%    46 °C       800 MHz  │
+CPU7    13.1%    48 °C      1000 MHz  │
+                                      │
+CPU fan speed: 2100 RPM               │
+
+Press Q or Ctrl+C to quit | Use ↑↓ or PageUp/PageDown to scroll
+```
+
+## Understanding Stats Output
+
+### Left Column Information
+
+#### System Information
+
+Basic system details:
+- **Linux distro**: Your Linux distribution and version
+- **Linux kernel**: Running kernel version
+- **Processor**: CPU model name
+- **Cores**: Total number of CPU cores (including hyperthreading)
+- **Architecture**: CPU architecture (x86_64, aarch64, etc.)
+- **Driver**: Active CPU frequency scaling driver (`intel_pstate`, `acpi-cpufreq`, `amd-pstate-epp`, etc.)
+
+#### Configuration File Notice
+
+If you're using a custom configuration:
+```text
+Using settings defined in /etc/auto-cpufreq.conf file
+```
+
+This confirms the daemon is applying your custom settings.
+
+#### Current CPU Stats
+
+Real-time CPU statistics:
+
+- **CPU max/min frequency**: Current frequency limits in MHz
+- **Per-core data**:
+  - **Core ID**: CPU0, CPU1, etc.
+  - **Usage**: Percentage of core utilization
+  - **Temperature**: Core temperature in Celsius
+  - **Frequency**: Current operating frequency in MHz
+- **CPU fan speed**: Fan RPM (if available from sensors)
+
+### Right Column Information
+
+#### Battery Stats (Laptops Only)
+
+- **Battery status**: `charging`, `discharging`, `full`, or `unknown`
+- **Battery percentage**: Current charge level (0-100%)
+- **AC plugged**: Whether AC adapter is connected
+- **Charging thresholds**: Start/stop thresholds (if configured for battery health)
+
+#### CPU Frequency Scaling
+
+Shows what the daemon is actively setting:
+
+```text
+Setting to use: "powersave" governor
+EPP setting: balance_power
+Setting to use: "balance_power" EPB
+```
+
+- **Governor**: The active CPU frequency governor
+- **EPP** (Energy Performance Preference): Intel-specific power/performance hint
+- **EPB** (Energy Performance Bias): Intel-specific bias setting
+
+If EPP or EPB aren't supported, you'll see:
+```text
+Not setting EPP (not supported by system)
+```
+
+#### System Statistics
+
+Critical metrics the daemon uses for decision-making:
+
+- **Total CPU usage**: Overall CPU utilization percentage
+- **Total system load**: 1-minute load average
+- **Average core temp**: Mean temperature across all cores
+- **Load status**: Current load assessment with 1m, 5m, 15m averages
+- **Usage/temp analysis**: Combined assessment of CPU usage and temperature
+- **Turbo boost status**: Whether turbo is currently enabled or disabled
+
+### Load Status Examples
+
+<Tabs>
+  <Tab title="Optimal Load">
+    ```text
+    Load optimal (load average: 0.42, 0.38, 0.35)
+    Optimal total CPU usage: 12.3%, normal average core temp: 47.9°C
+    Setting turbo boost: Off
+    ```
+    
+    System is running efficiently:
+    - Low load
+    - Low CPU usage
+    - Normal temperature
+    - Turbo disabled to save power
+  </Tab>
+  <Tab title="High CPU Load">
+    ```text
+    High CPU load (load average: 2.87, 2.54, 2.21)
+    Optimal total CPU usage: 68.5%, normal average core temp: 72.3°C
+    Setting turbo boost: On
+    ```
+    
+    System under heavy load:
+    - High load average
+    - High CPU usage
+    - Elevated temperature
+    - Turbo enabled for performance
+  </Tab>
+  <Tab title="High System Load">
+    ```text
+    High system load (load average: 3.42, 3.18, 2.95)
+    Optimal total CPU usage: 45.2%, high average core temp: 78.5°C
+    Setting turbo boost: Off
+    ```
+    
+    High load but temperature-limited:
+    - Very high load average
+    - Moderate CPU usage
+    - High temperature
+    - Turbo disabled to prevent overheating
+  </Tab>
+</Tabs>
+
+## Stats File Location
+
+The stats are read from a file that the daemon continuously updates:
+
+<Tabs>
+  <Tab title="Standard Installation">
+    ```bash
+    /var/run/auto-cpufreq.stats
+    ```
+  </Tab>
+  <Tab title="Snap Installation">
+    ```bash
+    /var/snap/auto-cpufreq/current/auto-cpufreq.stats
+    ```
+  </Tab>
+</Tabs>
+
+You can also directly view the stats file:
+
+```bash
+# Show last 50 lines
+sudo tail -n 50 /var/run/auto-cpufreq.stats
+
+# Follow in real-time
+sudo tail -f /var/run/auto-cpufreq.stats
+```
+
+## Stats Update Frequency
+
+The display refreshes automatically:
+
+- **Update interval**: Every 2 seconds
+- **Daemon cycle**: Daemon applies optimizations every 2 seconds
+- **Stats sync**: Stats display shows the most recent daemon cycle
+
+The timestamp in the header shows the current time:
+```text
+Stats Mode - 16:34:22
+```
+
+## Interactive Controls
+
+While viewing stats:
+
+- **Q** or **Ctrl+C**: Exit stats mode
+- **↑/↓ arrows**: Scroll up/down through the output
+- **PageUp/PageDown**: Scroll by page
+
+Exiting stats mode does not affect the daemon - it continues running in the background.
+
+## Interpreting Daemon Behavior
+
+### Governor Changes
+
+Watch for governor switches when power source changes:
+
+#### Plugging in AC Adapter
+
+```text
+Before:
+Battery status: discharging
+Setting to use: "powersave" governor
+
+After (within 2 seconds):
+Battery status: charging
+Setting to use: "performance" governor
+```
+
+#### Unplugging AC Adapter
+
+```text
+Before:
+Battery status: charging
+Setting to use: "performance" governor
+
+After (within 2 seconds):
+Battery status: discharging
+Setting to use: "powersave" governor
+```
+
+### Turbo Boost Patterns
+
+#### Battery Power
+
+Turbo is disabled unless needed:
+
+```text
+Low load (0.3 avg):
+  Setting turbo boost: Off  ← Saving power
+
+High CPU usage (65%):
+  Setting turbo boost: On   ← Performance needed
+
+Low usage but work to do (20%):
+  Setting turbo boost: On   ← Responsive performance
+```
+
+#### AC Power
+
+Turbo is more aggressive:
+
+```text
+Normal load (1.2 avg):
+  Setting turbo boost: On   ← Performance prioritized
+
+High temp (75°C) with low load:
+  Setting turbo boost: Off  ← Thermal management
+
+High load (3.5 avg):
+  Setting turbo boost: On   ← Maximum performance
+```
+
+### Frequency Scaling Observation
+
+Watch individual core frequencies adjust:
+
+```text
+Idle state:
+CPU0     2.1%    42 °C       400 MHz  ← Minimum frequency
+CPU1     1.8%    41 °C       400 MHz
+
+Under load:
+CPU0    85.3%    68 °C      4200 MHz  ← Maximum frequency (turbo)
+CPU1    78.9%    67 °C      4000 MHz
+```
+
+## Common Scenarios
+
+### 1. Verifying Daemon Operation
+
+After installing the daemon, check stats to ensure it's working:
+
+```bash
+# Install daemon
+sudo auto-cpufreq --install
+
+# Immediately check stats
+auto-cpufreq --stats
+```
+
+Look for:
+- ✅ System information displayed correctly
+- ✅ Governor is being set
+- ✅ Stats update every 2 seconds (watch timestamp)
+- ✅ Turbo boost changes based on load
+
+### 2. Testing Configuration Changes
+
+After modifying your config file:
+
+```bash
+# Edit configuration
+sudo nano /etc/auto-cpufreq.conf
+
+# Restart daemon
+sudo systemctl restart auto-cpufreq
+
+# Verify with stats
+auto-cpufreq --stats
+```
+
+Check that:
+- Configuration file path is shown
+- Custom governor is applied
+- Frequency limits match your config
+- Custom turbo settings are respected
+
+### 3. Monitoring Thermal Performance
+
+Watch temperatures under sustained load:
+
+```bash
+# Start stats
+auto-cpufreq --stats
+
+# In another terminal, run stress test
+stress --cpu 8 --timeout 60
+
+# Watch stats for:
+# - Temperature increases
+# - Turbo boost behavior
+# - Frequency scaling
+```
+
+### 4. Debugging Power Source Detection
+
+Test that power source changes are detected:
+
+```bash
+# Start stats
+auto-cpufreq --stats
+
+# Unplug AC adapter
+# Within 2 seconds, verify:
+# - Battery status: discharging
+# - Governor: powersave
+# - Turbo behavior changes
+
+# Plug in AC adapter
+# Within 2 seconds, verify:
+# - Battery status: charging
+# - Governor: performance
+# - Frequencies increase
+```
+
+## Troubleshooting with Stats
+
+### Daemon Not Responding
+
+If stats show stale data (timestamp not updating):
+
+```bash
+# Check daemon status
+sudo systemctl status auto-cpufreq
+
+# Check for errors
+sudo journalctl -u auto-cpufreq -n 50
+
+# Restart daemon
+sudo systemctl restart auto-cpufreq
+```
+
+### Governor Not Changing
+
+If governor stays the same regardless of power source:
+
+1. Check if overrides are active:
+   ```bash
+   auto-cpufreq --get-state
+   ```
+
+2. If an override is set, reset it:
+   ```bash
+   sudo auto-cpufreq --force=reset
+   sudo systemctl restart auto-cpufreq
+   ```
+
+### High Temperatures
+
+If stats show consistently high temperatures:
+
+```text
+Average temp. of all cores: 85.75 °C  ← Too hot!
+Setting turbo boost: On                ← Still on?
+```
+
+Consider:
+1. Adding turbo=never to battery config
+2. Lowering maximum frequency
+3. Cleaning laptop cooling system
+
+### Battery Not Detected
+
+If stats don't show battery information on a laptop:
+
+```bash
+# Check power supply detection
+ls -la /sys/class/power_supply/
+
+# Check daemon logs for errors
+sudo journalctl -u auto-cpufreq | grep -i battery
+```
+
+## Stats vs. Other Modes
+
+| Aspect | Stats | Monitor | Live |
+|--------|-------|---------|------|
+| Shows daemon activity | ✅ Yes | ❌ No | ❌ No |
+| Requires daemon running | ✅ Yes | ❌ No | ❌ No |
+| Makes changes | ❌ No | ❌ No | ✅ Yes |
+| Shows suggestions | ❌ No | ✅ Yes | ❌ No |
+| Requires sudo | ❌ No | ✅ Yes | ✅ Yes |
+| Interactive display | ✅ Yes | ✅ Yes | ✅ Yes |
+| Can run with daemon | ✅ Yes | ❌ No | ❌ No |
+
+## Log File Management
+
+The stats file automatically manages its size:
+
+- **Maximum size**: 10 MB
+- **Auto-truncation**: Daemon clears the file when it exceeds 10 MB
+- **No maintenance required**: Completely automatic
+
+Manual truncation (if needed):
+
+```bash
+sudo systemctl stop auto-cpufreq
+sudo truncate -s 0 /var/run/auto-cpufreq.stats
+sudo systemctl start auto-cpufreq
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/configuration/config-file">
+    Customize daemon behavior based on stats observations
+  </Card>
+  <Card title="Daemon Management" icon="server" href="/usage/daemon">
+    Learn more about managing the daemon
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Resolve issues identified in stats
+  </Card>
+  <Card title="Operating Modes" icon="list" href="/usage/modes">
+    Back to modes overview
+  </Card>
+</CardGroup>

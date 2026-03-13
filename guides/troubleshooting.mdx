@@ -1,0 +1,411 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for auto-cpufreq
+---
+
+## Common Performance Issues
+
+If you're experiencing high CPU temperatures, CPU not scaling properly, suboptimal performance, or turbo mode unavailability, the issue may be related to your CPU frequency driver.
+
+<Warning>
+  The `intel_pstate` and `amd-pstate` drivers can sometimes cause issues with auto-cpufreq. Switching to `acpi-cpufreq` often resolves these problems.
+</Warning>
+
+## CPU Driver Issues
+
+### Symptoms
+
+- High CPU temperatures
+- CPU not scaling to minimum/maximum frequencies
+- Suboptimal CPU performance
+- Turbo mode not available
+- Governor changes not taking effect
+
+### Solution: Switch to acpi-cpufreq Driver
+
+You can switch from `intel_pstate` or `amd-pstate` to the `acpi-cpufreq` driver by modifying kernel boot parameters.
+
+<Tabs>
+  <Tab title="GRUB (Intel)">
+    <Steps>
+      <Step title="Edit GRUB Configuration">
+        Open the GRUB configuration file:
+        
+        ```bash
+        sudo nano /etc/default/grub
+        ```
+      </Step>
+      
+      <Step title="Modify Boot Parameters">
+        Add `intel_pstate=disable` to the `GRUB_CMDLINE_LINUX_DEFAULT` line:
+        
+        ```bash
+        GRUB_CMDLINE_LINUX_DEFAULT="quiet splash intel_pstate=disable"
+        ```
+      </Step>
+      
+      <Step title="Update GRUB">
+        Apply the changes based on your distribution:
+        
+        **Debian/Ubuntu:**
+        ```bash
+        sudo update-grub
+        ```
+        
+        **Arch Linux:**
+        ```bash
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+        ```
+        
+        **Fedora:**
+        ```bash
+        sudo grub2-mkconfig -o /etc/grub2.cfg
+        # or for UEFI systems:
+        sudo grub2-mkconfig -o /etc/grub2-efi.cfg
+        # or for legacy boot:
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+        ```
+      </Step>
+      
+      <Step title="Reboot">
+        ```bash
+        sudo reboot
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="GRUB (AMD)">
+    <Steps>
+      <Step title="Edit GRUB Configuration">
+        Open the GRUB configuration file:
+        
+        ```bash
+        sudo nano /etc/default/grub
+        ```
+      </Step>
+      
+      <Step title="Modify Boot Parameters">
+        Add AMD-specific parameters to disable amd-pstate:
+        
+        ```bash
+        GRUB_CMDLINE_LINUX_DEFAULT="quiet splash initcall_blacklist=amd_pstate_init amd_pstate.enable=0"
+        ```
+      </Step>
+      
+      <Step title="Update GRUB">
+        Apply the changes based on your distribution:
+        
+        **Debian/Ubuntu:**
+        ```bash
+        sudo update-grub
+        ```
+        
+        **Arch Linux:**
+        ```bash
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+        ```
+        
+        **Fedora:**
+        ```bash
+        sudo grub2-mkconfig -o /etc/grub2.cfg
+        # or for UEFI systems:
+        sudo grub2-mkconfig -o /etc/grub2-efi.cfg
+        # or for legacy boot:
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+        ```
+      </Step>
+      
+      <Step title="Reboot">
+        ```bash
+        sudo reboot
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="systemd-boot (Intel)">
+    <Steps>
+      <Step title="Edit Kernel Command Line">
+        Open the kernel command line file:
+        
+        ```bash
+        sudo nano /etc/kernel/cmdline
+        ```
+      </Step>
+      
+      <Step title="Add Boot Parameters">
+        Add the following to disable intel_pstate:
+        
+        ```bash
+        quiet splash intel_pstate=disable
+        ```
+      </Step>
+      
+      <Step title="Reinstall Kernels">
+        Update the boot configuration:
+        
+        ```bash
+        sudo reinstall-kernels
+        ```
+      </Step>
+      
+      <Step title="Reboot">
+        ```bash
+        sudo reboot
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="systemd-boot (AMD)">
+    <Steps>
+      <Step title="Edit Kernel Command Line">
+        Open the kernel command line file:
+        
+        ```bash
+        sudo nano /etc/kernel/cmdline
+        ```
+      </Step>
+      
+      <Step title="Add Boot Parameters">
+        Add AMD-specific parameters:
+        
+        ```bash
+        quiet splash initcall_blacklist=amd_pstate_init amd_pstate.enable=0
+        ```
+      </Step>
+      
+      <Step title="Reinstall Kernels">
+        Update the boot configuration:
+        
+        ```bash
+        sudo reinstall-kernels
+        ```
+      </Step>
+      
+      <Step title="Reboot">
+        ```bash
+        sudo reboot
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## GUI Launch Issues
+
+If auto-cpufreq-gtk doesn't launch and exits with code 1, there's a workaround:
+
+### Solution
+
+<Steps>
+  <Step title="Test the Workaround">
+    Try launching with the following command:
+    
+    ```bash
+    env -i XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR auto-cpufreq-gtk
+    ```
+  </Step>
+  
+  <Step title="Make It Permanent">
+    If the workaround works, edit the desktop entry file:
+    
+    ```bash
+    sudo nano /usr/share/applications/auto-cpufreq-gtk.desktop
+    ```
+    
+    Change the `Exec` line to:
+    
+    ```ini
+    Exec=env -i XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR auto-cpufreq-gtk
+    ```
+  </Step>
+</Steps>
+
+## AUR Installation Issues
+
+<Note>
+  If the AUR installer does not work for your system, fall back to the auto-cpufreq-installer and open an issue on GitHub.
+</Note>
+
+### Common AUR Problems
+
+<AccordionGroup>
+  <Accordion title="Daemon Not Starting">
+    The AUR package daemon installer doesn't work the same way as the standard installer. Start the daemon with:
+    
+    ```bash
+    sudo systemctl enable --now auto-cpufreq
+    ```
+  </Accordion>
+  
+  <Accordion title="GNOME Power Profiles Conflict">
+    The GNOME Power Profiles daemon isn't automatically disabled by AUR installs. Manually mask it:
+    
+    ```bash
+    sudo systemctl mask power-profiles-daemon.service
+    sudo systemctl enable --now auto-cpufreq.service
+    ```
+  </Accordion>
+  
+  <Accordion title="TuneD Daemon Conflict (Fedora 41+)">
+    The TuneD daemon (enabled by default on Fedora 41) is automatically disabled by auto-cpufreq-installer but not by AUR installs:
+    
+    ```bash
+    sudo systemctl mask tuned.service
+    sudo systemctl enable --now auto-cpufreq.service
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Snap Installation Issues
+
+<AccordionGroup>
+  <Accordion title="GUI Not Available">
+    The GUI is not available in Snap installs due to Snap package confinement limitations. All CLI functionality works as intended. Consider using the [auto-cpufreq-installer](/installation) for GUI support.
+  </Accordion>
+  
+  <Accordion title="Snapd Version Too Old">
+    Make sure snapd is installed and `snap version` is >= 2.44:
+    
+    ```bash
+    snap version
+    sudo snap refresh snapd
+    ```
+  </Accordion>
+  
+  <Accordion title="Fedora cgroups v2 Error">
+    Fedora users may encounter errors due to cgroups v2. Run auto-cpufreq with:
+    
+    ```bash
+    sudo snap run auto-cpufreq
+    ```
+    
+    Or use the auto-cpufreq-installer instead, which doesn't have this issue.
+  </Accordion>
+</AccordionGroup>
+
+## Daemon Not Running
+
+<Steps>
+  <Step title="Check Daemon Status">
+    ```bash
+    # Standard install
+    systemctl status auto-cpufreq
+    
+    # Snap install
+    systemctl status snap.auto-cpufreq.service.service
+    ```
+  </Step>
+  
+  <Step title="Check Logs">
+    ```bash
+    # Standard install
+    journalctl -u auto-cpufreq -f
+    
+    # Snap install
+    journalctl -u snap.auto-cpufreq.service.service -f
+    ```
+  </Step>
+  
+  <Step title="Restart Daemon">
+    ```bash
+    sudo systemctl restart auto-cpufreq
+    ```
+  </Step>
+</Steps>
+
+## Configuration Not Applied
+
+<AccordionGroup>
+  <Accordion title="Config File Not Found">
+    auto-cpufreq looks for config files in this order:
+    
+    1. Commandline argument: `--config <FILE>`
+    2. User config: `$XDG_CONFIG_HOME/auto-cpufreq/auto-cpufreq.conf`
+    3. System config: `/etc/auto-cpufreq.conf`
+    
+    Create your config at `/etc/auto-cpufreq.conf` for system-wide settings.
+  </Accordion>
+  
+  <Accordion title="Changes Not Taking Effect">
+    After modifying the config file, restart the daemon:
+    
+    ```bash
+    sudo systemctl restart auto-cpufreq.service
+    ```
+  </Accordion>
+  
+  <Accordion title="Battery Thresholds Not Working">
+    Check if your laptop has the required ACPI kernel driver:
+    
+    ```bash
+    # For ThinkPad
+    lsmod | grep thinkpad_acpi
+    
+    # For IdeaPad
+    lsmod | grep ideapad_laptop
+    
+    # For ASUS
+    lsmod | grep asus_wmi
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Conflicting Services
+
+<Warning>
+  auto-cpufreq conflicts with TLP and GNOME Power Profiles daemon. Using both simultaneously will cause issues like overheating and unexpected behavior.
+</Warning>
+
+### Check for Conflicts
+
+```bash
+# Check TLP status
+tlp-stat -s
+
+# Check GNOME Power Profiles
+systemctl status power-profiles-daemon
+
+# Check TuneD (Fedora)
+systemctl status tuned
+```
+
+### Disable Conflicting Services
+
+```bash
+# Disable GNOME Power Profiles
+sudo systemctl mask power-profiles-daemon.service
+
+# Disable TuneD
+sudo systemctl mask tuned.service
+
+# Remove TLP (if you no longer need it)
+sudo apt remove tlp tlp-rdw  # Debian/Ubuntu
+sudo dnf remove tlp           # Fedora
+sudo pacman -R tlp            # Arch Linux
+```
+
+<Info>
+  **thermald** does not conflict with auto-cpufreq and is recommended to run alongside it for better thermal management.
+</Info>
+
+## Getting Help
+
+If you're still experiencing issues:
+
+1. Run auto-cpufreq with the `--debug` flag:
+   ```bash
+   sudo auto-cpufreq --debug
+   ```
+
+2. Try the [auto-cpufreq-genAI-chatbot](https://foolcontrol.org/?p=4903) for immediate assistance
+
+3. [Submit an issue](https://github.com/AdnanHodzic/auto-cpufreq/issues) on GitHub with:
+   - Debug output
+   - Distribution and version
+   - Installation method
+   - Description of the problem
+
+4. Join the [Discord server](https://discord.gg/Sjauxtj6kH) for community support

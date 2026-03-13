@@ -1,0 +1,93 @@
+---
+title: Configuration Overview
+description: Overview of auto-cpufreq configuration options and file locations
+---
+
+auto-cpufreq offers flexible configuration options to customize CPU frequency scaling, power management, and battery optimization for your system.
+
+## Configuration Methods
+
+You can configure auto-cpufreq through:
+
+1. **Configuration file** - Define persistent settings for charger and battery modes
+2. **Command-line flags** - Override behavior temporarily or permanently
+3. **Runtime options** - Control governor and turbo mode behavior
+
+## Config File Locations
+
+auto-cpufreq searches for configuration files in the following priority order:
+
+<Steps>
+  <Step title="Command line argument">
+    Use `--config` flag to specify a custom config file path:
+    ```bash
+    auto-cpufreq --config /path/to/custom.conf
+    ```
+  </Step>
+  
+  <Step title="User config file">
+    `~/.config/auto-cpufreq/auto-cpufreq.conf` or `$XDG_CONFIG_HOME/auto-cpufreq/auto-cpufreq.conf`
+  </Step>
+  
+  <Step title="System config file">
+    `/etc/auto-cpufreq.conf` (default location)
+  </Step>
+</Steps>
+
+If no configuration file is found, auto-cpufreq will use default automatic settings.
+
+## Configuration Topics
+
+<CardGroup cols={2}>
+  <Card title="Config File Structure" icon="file-code" href="/configuration/config-file">
+    Complete reference for the configuration file format and all available options
+  </Card>
+  
+  <Card title="Governor Override" icon="gauge-high" href="/configuration/governor-override">
+    Force specific CPU governors using the `--force` flag
+  </Card>
+  
+  <Card title="Turbo Mode Control" icon="bolt" href="/configuration/turbo-mode">
+    Manage CPU turbo boost behavior with the `--turbo` flag
+  </Card>
+  
+  <Card title="Battery Thresholds" icon="battery-half" href="/configuration/battery-thresholds">
+    Configure battery charging thresholds for supported devices
+  </Card>
+  
+  <Card title="Power Profiles" icon="power-off" href="/configuration/power-profiles">
+    Handle conflicts with GNOME Power Profiles daemon and other power management services
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+Here's a minimal configuration file example:
+
+```ini
+# Settings when connected to AC power
+[charger]
+governor = performance
+turbo = auto
+
+# Settings when on battery
+[battery]
+governor = powersave
+turbo = auto
+```
+
+<Tip>
+  After creating or modifying your config file, use `auto-cpufreq --monitor` to see how the settings will be applied without making permanent changes.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Config File Documentation" href="/configuration/config-file">
+    Learn about all available configuration parameters
+  </Card>
+  
+  <Card title="Monitor Mode" href="/usage/monitor">
+    Test your configuration in monitor mode
+  </Card>
+</CardGroup>

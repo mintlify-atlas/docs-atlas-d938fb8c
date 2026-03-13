@@ -1,0 +1,236 @@
+---
+title: --remove
+description: Remove the auto-cpufreq daemon and stop automatic optimizations
+---
+
+The `--remove` flag uninstalls the auto-cpufreq daemon, stopping all automatic CPU optimizations and removing the system service.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --remove
+```
+
+## Description
+
+Removing the daemon:
+- Stops the running auto-cpufreq daemon
+- Disables the service from starting at boot
+- Removes systemd service files (or disables snap service)
+- Restores CPU settings to system defaults
+- Cleans up statistics and log files
+- Optionally reminds about GNOME Power Profiles restoration
+
+## Requirements
+
+- **Root privileges**: Required to modify system services
+
+## Example Usage
+
+```bash
+sudo auto-cpufreq --remove
+```
+
+## Removal Process
+
+### Standard Installation (non-snap)
+
+1. **Stops the daemon**:
+   - Terminates the running service
+   - Restores original CPU frequency settings
+
+2. **Removes service files**:
+   - Deletes systemd service configuration
+   - Removes auto-cpufreq from systemd
+
+3. **Cleanup**:
+   - Clears statistics files
+   - Removes temporary files
+
+### Snap Installation
+
+1. **Disables snap service**:
+   - Sets snap daemon configuration to disabled
+   - Stops the auto-cpufreq snap service
+
+2. **Cleanup**:
+   - Closes and removes statistics files
+   - Shows GNOME Power Profiles restoration reminder
+
+## Expected Output
+
+After successful removal:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Removing auto-cpufreq daemon...
+
+Stopping auto-cpufreq systemd service...
+Disabling auto-cpufreq systemd service...
+Removing auto-cpufreq systemd service files...
+
+Daemon removed successfully!
+
+You can now re-enable other power management services if needed.
+
+-------------------------------------------------------------------------------
+```
+
+## Behavior After Removal
+
+Once removed:
+- **No automatic optimizations**: CPU settings managed by system defaults
+- **Service disabled**: Won't start at boot
+- **Clean state**: All auto-cpufreq service files removed
+- **Other services**: You may want to re-enable conflicting services
+
+## Verifying Removal
+
+### Check Daemon Status
+
+**For standard installation:**
+```bash
+sudo systemctl status auto-cpufreq
+```
+
+Should show: `Unit auto-cpufreq.service could not be found`
+
+**For snap installation:**
+```bash
+sudo snap services auto-cpufreq
+```
+
+Should show the service as `inactive` and `disabled`
+
+### Check for Running Processes
+
+```bash
+ps aux | grep auto-cpufreq
+```
+
+Should only show the grep command itself.
+
+## Re-enabling Other Power Management
+
+After removing auto-cpufreq, you may want to re-enable other power management tools:
+
+### GNOME Power Profiles
+
+```bash
+sudo systemctl start power-profiles-daemon
+sudo systemctl enable power-profiles-daemon
+```
+
+### TLP
+
+```bash
+sudo systemctl start tlp
+sudo systemctl enable tlp
+```
+
+### Tuned
+
+```bash
+sudo systemctl start tuned
+sudo systemctl enable tuned
+```
+
+## Use Cases
+
+### Temporary Uninstall
+
+Remove daemon to test other power management solutions:
+```bash
+sudo auto-cpufreq --remove
+# Test other tools
+# Reinstall later:
+sudo auto-cpufreq --install
+```
+
+### Complete Uninstallation
+
+Remove daemon before uninstalling the package:
+```bash
+sudo auto-cpufreq --remove
+# Then uninstall package (method depends on installation)
+```
+
+### Troubleshooting
+
+Remove and reinstall to fix issues:
+```bash
+sudo auto-cpufreq --remove
+sudo auto-cpufreq --install
+```
+
+## Notes
+
+- **Safe to run**: Can be executed even if daemon isn't installed
+- **No data loss**: Removal only affects the daemon service
+- **Config preserved**: Configuration files are not deleted
+- **Reinstallation**: Can reinstall anytime with `--install`
+
+## What Gets Removed
+
+### Standard Installation
+- `/etc/systemd/system/auto-cpufreq.service` - Service file
+- Runtime statistics files
+- Running daemon process
+
+### Snap Installation
+- Snap daemon configuration
+- Statistics files in snap directories
+- Running snap service
+
+### What Stays
+- Configuration file (`/etc/auto-cpufreq.conf`) - Not deleted
+- auto-cpufreq package/binary - Not uninstalled
+- System logs - Retained in journal
+
+## Related Commands
+
+- [--install](/cli/install) - Install the daemon
+- [--update](/cli/update) - Update auto-cpufreq
+- [--stats](/cli/stats) - View daemon statistics (requires daemon)
+
+## Reinstalling
+
+To reinstall the daemon after removal:
+```bash
+sudo auto-cpufreq --install
+```
+
+## Complete Uninstallation
+
+To completely remove auto-cpufreq from your system:
+
+1. Remove the daemon:
+   ```bash
+   sudo auto-cpufreq --remove
+   ```
+
+2. Remove configuration:
+   ```bash
+   sudo rm -f /etc/auto-cpufreq.conf
+   ```
+
+3. Uninstall package:
+   
+   **Snap:**
+   ```bash
+   sudo snap remove auto-cpufreq
+   ```
+   
+   **Git installation:**
+   ```bash
+   cd /path/to/auto-cpufreq
+   sudo ./auto-cpufreq-installer --remove
+   ```
+   
+   **Package manager:** (depends on your distribution)
+   ```bash
+   sudo apt remove auto-cpufreq      # Debian/Ubuntu
+   sudo dnf remove auto-cpufreq      # Fedora
+   sudo pacman -R auto-cpufreq       # Arch (AUR)
+   ```

@@ -1,0 +1,167 @@
+---
+title: Bluetooth Boot Management
+description: Control Bluetooth auto-enable behavior on system boot
+---
+
+## Overview
+
+auto-cpufreq provides options to control whether Bluetooth is automatically enabled at boot time. This is particularly useful for users experiencing issues with GNOME automatically re-enabling Bluetooth after every reboot or suspend/wake cycle.
+
+## Why Bluetooth Management?
+
+<Info>
+  GNOME desktop environment has a behavior where it automatically enables Bluetooth on every reboot or after suspend/wake up, even if you manually disabled it. The `--bluetooth_boot_off` option prevents this behavior.
+</Info>
+
+By managing Bluetooth boot behavior, you can:
+
+- Save power by keeping Bluetooth disabled when not needed
+- Prevent unwanted Bluetooth connections at boot
+- Maintain your preferred Bluetooth state across reboots
+- Override GNOME's auto-enable behavior
+
+## Disable Bluetooth on Boot
+
+To prevent Bluetooth from automatically enabling at boot:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_off
+```
+
+<Note>
+  This only disables Bluetooth at boot time. You can still manually enable Bluetooth whenever you need it, and it will work normally until the next reboot.
+</Note>
+
+### What It Does
+
+The `--bluetooth_boot_off` command modifies the `/etc/bluetooth/main.conf` file by setting `AutoEnable=false` in the `[Policy]` section. This tells the Bluetooth service not to automatically enable Bluetooth adapters at boot.
+
+## Enable Bluetooth on Boot
+
+If you prefer Bluetooth to be enabled at boot time (especially after installing the auto-cpufreq daemon, which disables it by default):
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_on
+```
+
+This is useful when:
+- You regularly use Bluetooth devices (keyboards, mice, headphones)
+- You want to reverse the default behavior after daemon installation
+- You need Bluetooth immediately available at system startup
+
+## Installation Behavior
+
+<Warning>
+  When you install the auto-cpufreq daemon using `sudo auto-cpufreq --install`, Bluetooth boot is automatically disabled. This is an intentional power-saving feature.
+</Warning>
+
+If you want Bluetooth enabled at boot after daemon installation, run:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_on
+```
+
+## Snap Package Limitations
+
+If you installed auto-cpufreq via Snap, these commands have limitations due to Snap package confinement.
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+    cd auto-cpufreq
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    Install required Python libraries:
+    
+    ```bash
+    sudo apt install python3-psutil python3-pyinotify
+    ```
+    
+    Or using pip:
+    
+    ```bash
+    sudo pip3 install psutil pyinotify --break-system-packages
+    ```
+  </Step>
+  
+  <Step title="Run Power Helper Script">
+    To disable Bluetooth on boot:
+    
+    ```bash
+    sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+    ```
+    
+    To enable Bluetooth on boot:
+    
+    ```bash
+    sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_on
+    ```
+  </Step>
+</Steps>
+
+## Configuration File Method
+
+The Bluetooth boot setting is stored in `/etc/bluetooth/main.conf`. You can also manually edit this file:
+
+```ini /etc/bluetooth/main.conf
+[Policy]
+AutoEnable=false
+```
+
+Set `AutoEnable=true` to enable Bluetooth at boot, or `AutoEnable=false` to disable it.
+
+<Note>
+  After manually editing the configuration file, restart the Bluetooth service:
+  
+  ```bash
+  sudo systemctl restart bluetooth
+  ```
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Bluetooth Still Enables at Boot">
+    If Bluetooth continues to enable at boot after running `--bluetooth_boot_off`:
+    
+    1. Check if the setting was applied: `cat /etc/bluetooth/main.conf | grep AutoEnable`
+    2. Restart the Bluetooth service: `sudo systemctl restart bluetooth`
+    3. Verify you're not running conflicting services that manage Bluetooth
+  </Accordion>
+  
+  <Accordion title="Command Not Working on Snap">
+    Snap packages have confinement restrictions. You must use the power_helper script method as described in the "Snap Package Limitations" section above.
+  </Accordion>
+  
+  <Accordion title="Bluetooth Package Not Present">
+    If you see "package providing bluetooth access is not present", install the Bluetooth packages for your distribution:
+    
+    ```bash
+    # Ubuntu/Debian
+    sudo apt install bluez bluetooth
+    
+    # Fedora
+    sudo dnf install bluez
+    
+    # Arch Linux
+    sudo pacman -S bluez bluez-utils
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Checking Current Status
+
+To check if Bluetooth will be enabled at boot, examine the configuration:
+
+```bash
+grep -A 2 "\[Policy\]" /etc/bluetooth/main.conf | grep AutoEnable
+```
+
+## Related Commands
+
+- `systemctl status bluetooth` - Check Bluetooth service status
+- `bluetoothctl` - Interactive Bluetooth control
+- `rfkill list bluetooth` - Check if Bluetooth is blocked

@@ -1,0 +1,118 @@
+---
+title: "Operating Modes"
+description: "Overview of auto-cpufreq's three main operating modes"
+---
+
+auto-cpufreq offers three distinct modes of operation, each designed for different use cases:
+
+## Mode Comparison
+
+<CardGroup cols={3}>
+  <Card title="Monitor Mode" icon="eye" href="/usage/monitor">
+    View optimization suggestions without making any changes to your system
+  </Card>
+  <Card title="Live Mode" icon="play" href="/usage/live">
+    Apply temporary optimizations for testing and evaluation
+  </Card>
+  <Card title="Daemon Mode" icon="server" href="/usage/daemon">
+    Install as a system service for permanent, automatic optimizations
+  </Card>
+</CardGroup>
+
+## Choosing the Right Mode
+
+<AccordionGroup>
+  <Accordion title="When to use Monitor Mode">
+    - **First-time users**: Get familiar with what auto-cpufreq will do
+    - **Evaluation**: See potential optimizations without risk
+    - **Troubleshooting**: Diagnose issues without making changes
+    - **Learning**: Understand CPU frequency scaling behavior
+    
+    Monitor mode is completely safe and makes no changes to your system.
+  </Accordion>
+
+  <Accordion title="When to use Live Mode">
+    - **Testing**: Try optimizations before permanent installation
+    - **Configuration validation**: Test custom config files
+    - **Temporary use**: Need optimizations for a single session
+    - **Debugging**: Test changes with immediate feedback
+    
+    Live mode changes are temporary and revert when you stop the process.
+  </Accordion>
+
+  <Accordion title="When to use Daemon Mode">
+    - **Daily use**: You want permanent, automatic optimizations
+    - **Production systems**: Requires persistent CPU management
+    - **Background operation**: Set it and forget it
+    - **Boot persistence**: Optimizations across reboots
+    
+    Daemon mode is the recommended mode for everyday use after testing.
+  </Accordion>
+</AccordionGroup>
+
+## Mode Features Comparison
+
+| Feature | Monitor | Live | Daemon |
+|---------|---------|------|--------|
+| Makes system changes | ❌ No | ✅ Yes (temporary) | ✅ Yes (permanent) |
+| Requires root | ✅ Yes | ✅ Yes | ✅ Yes |
+| Persists after reboot | ❌ No | ❌ No | ✅ Yes |
+| Auto-starts on boot | ❌ No | ❌ No | ✅ Yes |
+| Shows live updates | ✅ Yes | ✅ Yes | ❌ No (see stats) |
+| Interactive display | ✅ Yes | ✅ Yes | ❌ No |
+| Runs in background | ❌ No | ❌ No | ✅ Yes |
+
+## Quick Start Guide
+
+<Steps>
+  <Step title="Start with Monitor Mode">
+    Run monitor mode to see what auto-cpufreq recommends:
+    
+    ```bash
+    sudo auto-cpufreq --monitor
+    ```
+    
+    Press `Ctrl+C` to exit when you're done observing.
+  </Step>
+
+  <Step title="Test with Live Mode">
+    Try live mode to experience the optimizations:
+    
+    ```bash
+    sudo auto-cpufreq --live
+    ```
+    
+    Press `Ctrl+C` to exit and revert changes.
+  </Step>
+
+  <Step title="Install Daemon Mode">
+    Once satisfied, install the daemon for permanent use:
+    
+    ```bash
+    sudo auto-cpufreq --install
+    ```
+    
+    The daemon will start automatically and persist across reboots.
+  </Step>
+</Steps>
+
+<Warning>
+  Only one mode can run at a time. You cannot run monitor/live mode while the daemon is active.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Monitor Mode" icon="eye" href="/usage/monitor">
+    Learn more about viewing suggestions
+  </Card>
+  <Card title="Live Mode" icon="play" href="/usage/live">
+    Understand temporary optimizations
+  </Card>
+  <Card title="Daemon Mode" icon="server" href="/usage/daemon">
+    Set up permanent automatic optimization
+  </Card>
+  <Card title="Stats" icon="chart-line" href="/usage/stats">
+    View daemon statistics
+  </Card>
+</CardGroup>

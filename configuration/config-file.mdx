@@ -1,0 +1,427 @@
+---
+title: Configuration File
+description: Complete reference for auto-cpufreq.conf configuration file structure and options
+---
+
+The configuration file allows you to define custom CPU frequency scaling and power management settings for both AC power (charger) and battery modes.
+
+## File Location
+
+By default, auto-cpufreq looks for the configuration file at:
+
+- `/etc/auto-cpufreq.conf` (system-wide)
+- `~/.config/auto-cpufreq/auto-cpufreq.conf` (user-specific)
+
+You can also specify a custom location:
+
+```bash
+auto-cpufreq --config /path/to/config.conf
+```
+
+<Info>
+  See [Configuration Overview](/configuration/overview) for the complete file search priority order.
+</Info>
+
+## Configuration File Structure
+
+The configuration file uses INI format with the following sections:
+
+### [charger] Section
+
+Settings applied when the system is connected to AC power.
+
+### [battery] Section
+
+Settings applied when the system is running on battery power.
+
+### [power_supply_ignore_list] Section
+
+Optional section to ignore specific power supply devices (e.g., game controllers, peripherals).
+
+## Available Parameters
+
+### governor
+
+Set the CPU frequency scaling governor.
+
+<ParamField path="governor" type="string">
+  CPU frequency scaling governor to use.
+  
+  **Available options:**
+  - `performance` - Maximum performance, highest frequency
+  - `powersave` - Power saving, lowest frequency
+  - `schedutil` - Scheduler-based frequency scaling (recommended for modern kernels)
+  - `ondemand` - Dynamic frequency scaling based on CPU load
+  - `conservative` - Similar to ondemand but more gradual
+  
+  **Check available governors:**
+  ```bash
+  cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+  ```
+</ParamField>
+
+**Example:**
+```ini
+[charger]
+governor = performance
+
+[battery]
+governor = powersave
+```
+
+### energy_performance_preference
+
+Set Energy Performance Preference (EPP) hint for Intel CPUs with `intel_pstate` driver.
+
+<ParamField path="energy_performance_preference" type="string">
+  EPP hint for CPU power/performance balance.
+  
+  **Available options:**
+  - `performance` - Maximum performance
+  - `balance_performance` - Balanced with performance bias
+  - `default` - Default balance
+  - `balance_power` - Balanced with power saving bias
+  - `power` - Maximum power saving
+  
+  **Check available preferences:**
+  ```bash
+  cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_available_preferences
+  ```
+</ParamField>
+
+**Example:**
+```ini
+[charger]
+energy_performance_preference = performance
+
+[battery]
+energy_performance_preference = power
+```
+
+### energy_perf_bias
+
+Set Energy Performance Bias (EPB) for Intel CPUs with `intel_pstate` driver.
+
+<ParamField path="energy_perf_bias" type="string or integer">
+  EPB value for power/performance balance.
+  
+  **Available options:**
+  - Numeric value: `0` (max performance) to `15` (max power saving)
+  - String values:
+    - `performance` (0)
+    - `balance_performance` (4)
+    - `default` (6)
+    - `balance_power` (8)
+    - `power` (15)
+  
+  **Default values if not specified:**
+  - Charger: `balance_performance` (4)
+  - Battery: `balance_power` (8)
+  
+  **Reference:** [Kernel EPB Documentation](https://www.kernel.org/doc/html/latest/admin-guide/pm/intel_epb.html)
+</ParamField>
+
+**Example:**
+```ini
+[charger]
+energy_perf_bias = balance_performance
+
+[battery]
+energy_perf_bias = balance_power
+```
+
+### platform_profile
+
+Set ACPI platform profile for supported systems.
+
+<ParamField path="platform_profile" type="string">
+  ACPI platform profile setting.
+  
+  **Common options:**
+  - `performance`
+  - `balanced`
+  - `low-power`
+  - `quiet`
+  
+  Options vary by manufacturer and model.
+  
+  **Check available profiles:**
+  ```bash
+  cat /sys/firmware/acpi/platform_profile_choices
+  ```
+  
+  **Reference:** [Kernel Platform Profile Documentation](https://www.kernel.org/doc/html/latest/userspace-api/sysfs-platform_profile.html)
+</ParamField>
+
+**Example:**
+```ini
+[charger]
+platform_profile = performance
+
+[battery]
+platform_profile = low-power
+```
+
+### scaling_min_freq and scaling_max_freq
+
+Set minimum and maximum CPU frequency limits in kHz.
+
+<ParamField path="scaling_min_freq" type="integer">
+  Minimum CPU frequency in kHz.
+  
+  **Example conversions:**
+  - 800 MHz = 800,000 kHz → `scaling_min_freq = 800000`
+  - 1.0 GHz = 1,000 MHz = 1,000,000 kHz → `scaling_min_freq = 1000000`
+  
+  **Reference:** [MHz to Hz Conversion](https://www.rapidtables.com/convert/frequency/mhz-to-hz.html)
+</ParamField>
+
+<ParamField path="scaling_max_freq" type="integer">
+  Maximum CPU frequency in kHz.
+  
+  **Example conversions:**
+  - 2.4 GHz = 2,400 MHz = 2,400,000 kHz → `scaling_max_freq = 2400000`
+  - 3.5 GHz = 3,500 MHz = 3,500,000 kHz → `scaling_max_freq = 3500000`
+</ParamField>
+
+**Example:**
+```ini
+[charger]
+scaling_min_freq = 800000
+scaling_max_freq = 3500000
+
+[battery]
+scaling_min_freq = 800000
+scaling_max_freq = 2000000
+```
+
+<Warning>
+  Setting frequency limits outside your CPU's supported range may cause issues. Check available frequencies first:
+  ```bash
+  cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
+  ```
+</Warning>
+
+### turbo
+
+Control CPU turbo boost behavior.
+
+<ParamField path="turbo" type="string">
+  Turbo boost mode setting.
+  
+  **Available options:**
+  - `auto` - Automatically manage turbo based on power state (default)
+  - `always` - Always enable turbo boost
+  - `never` - Always disable turbo boost
+</ParamField>
+
+**Example:**
+```ini
+[charger]
+turbo = auto
+
+[battery]
+turbo = never
+```
+
+<Info>
+  See [Turbo Mode](/configuration/turbo-mode) for more details on turbo boost control.
+</Info>
+
+### battery_device
+
+Specify which battery to monitor (for systems with multiple batteries).
+
+<ParamField path="battery_device" type="string">
+  Battery device name to use for power state detection.
+  
+  **Default:** Auto-detect first battery found
+  
+  **List available batteries:**
+  ```bash
+  ls /sys/class/power_supply/
+  ```
+</ParamField>
+
+**Example:**
+```ini
+[battery]
+battery_device = BAT1
+```
+
+### Battery Threshold Parameters
+
+These parameters control battery charging thresholds to extend battery lifespan.
+
+<ParamField path="enable_thresholds" type="boolean">
+  Enable battery charging threshold management.
+  
+  **Values:** `true` or `false`
+</ParamField>
+
+<ParamField path="start_threshold" type="integer">
+  Battery charge percentage to start charging.
+  
+  **Range:** 0-99 (0 = disabled)
+</ParamField>
+
+<ParamField path="stop_threshold" type="integer">
+  Battery charge percentage to stop charging.
+  
+  **Range:** 1-100 (100 = disabled)
+</ParamField>
+
+<ParamField path="ideapad_laptop_conservation_mode" type="boolean">
+  Enable conservation mode for Lenovo IdeaPad laptops.
+  
+  **Values:** `true` or `false`
+  
+  **Note:** IdeaPad models use conservation mode instead of start/stop thresholds.
+</ParamField>
+
+**Example:**
+```ini
+[battery]
+enable_thresholds = true
+start_threshold = 20
+stop_threshold = 80
+```
+
+<Info>
+  See [Battery Thresholds](/configuration/battery-thresholds) for detailed information about supported devices and configuration.
+</Info>
+
+## Power Supply Ignore List
+
+Ignore specific power supply devices (e.g., wireless controllers, keyboards) that shouldn't affect power mode detection.
+
+```ini
+[power_supply_ignore_list]
+controller1 = hid-battery
+keyboard = keyboard-battery
+mouse = mouse-battery
+```
+
+**List all power supply devices:**
+```bash
+ls /sys/class/power_supply/
+```
+
+## Complete Configuration Example
+
+Here's a comprehensive example configuration file:
+
+```ini
+# Settings for when connected to AC power
+[charger]
+# Use performance governor for maximum responsiveness
+governor = performance
+
+# Set EPP to performance
+energy_performance_preference = performance
+
+# Use balanced EPB
+energy_perf_bias = balance_performance
+
+# Set platform profile
+platform_profile = performance
+
+# No frequency limits on AC power
+# scaling_min_freq = 800000
+# scaling_max_freq = 3500000
+
+# Auto-manage turbo boost
+turbo = auto
+
+# Settings for when using battery power
+[battery]
+# Specify which battery to monitor (optional)
+battery_device = BAT0
+
+# Use powersave governor for battery life
+governor = powersave
+
+# Set EPP to power saving
+energy_performance_preference = power
+
+# Use power-saving EPB
+energy_perf_bias = balance_power
+
+# Set platform profile to low power
+platform_profile = low-power
+
+# Limit max frequency on battery
+scaling_min_freq = 800000
+scaling_max_freq = 2000000
+
+# Disable turbo on battery for better battery life
+turbo = never
+
+# Battery charging thresholds (Lenovo ThinkPad)
+enable_thresholds = true
+start_threshold = 20
+stop_threshold = 80
+
+# For Lenovo IdeaPad, use conservation mode instead:
+# ideapad_laptop_conservation_mode = true
+
+# Ignore controller batteries
+[power_supply_ignore_list]
+ps5_controller = hid-battery
+xbox_controller = controller-battery
+```
+
+## Verifying Your Configuration
+
+After creating or modifying your configuration file, verify it works correctly:
+
+<Steps>
+  <Step title="Check syntax">
+    Ensure the file uses valid INI format with proper sections and key=value pairs.
+  </Step>
+  
+  <Step title="Test in monitor mode">
+    Run monitor mode to see suggested settings without applying them:
+    ```bash
+    sudo auto-cpufreq --monitor
+    ```
+  </Step>
+  
+  <Step title="Test in live mode">
+    Run live mode to apply settings temporarily:
+    ```bash
+    sudo auto-cpufreq --live
+    ```
+  </Step>
+  
+  <Step title="Install daemon">
+    Once satisfied, install the daemon for permanent operation:
+    ```bash
+    sudo auto-cpufreq --install
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  The configuration file is monitored for changes. When running as a daemon, auto-cpufreq will automatically reload the configuration when the file is modified.
+</Tip>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Governor Override" href="/configuration/governor-override">
+    Override governors temporarily with command-line flags
+  </Card>
+  
+  <Card title="Turbo Mode" href="/configuration/turbo-mode">
+    Control CPU turbo boost behavior
+  </Card>
+  
+  <Card title="Battery Thresholds" href="/configuration/battery-thresholds">
+    Configure battery charging thresholds
+  </Card>
+  
+  <Card title="Monitor Mode" href="/usage/monitor">
+    Test configuration without applying changes
+  </Card>
+</CardGroup>

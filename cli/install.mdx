@@ -1,0 +1,221 @@
+---
+title: --install
+description: Install the auto-cpufreq daemon for permanent CPU optimizations
+---
+
+The `--install` flag installs auto-cpufreq as a system daemon (service) that runs automatically at boot and continuously optimizes your CPU settings.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --install
+```
+
+## Description
+
+Installing the daemon:
+- Creates and enables a systemd service (or snap service)
+- Configures auto-cpufreq to start automatically at boot
+- Applies CPU optimizations continuously in the background
+- Detects and handles conflicts with other power management tools
+- Persists across reboots
+
+## Requirements
+
+- **Root privileges**: Required to install system services
+- **systemd or snapd**: Depending on installation method
+
+## Example Usage
+
+### Basic Installation
+
+```bash
+sudo auto-cpufreq --install
+```
+
+### Installation with Custom Config
+
+First, create or place your config file:
+```bash
+sudo mkdir -p /etc
+sudo nano /etc/auto-cpufreq.conf
+```
+
+Then install the daemon (it will automatically detect the config):
+```bash
+sudo auto-cpufreq --install
+```
+
+## Installation Process
+
+### Standard Installation (non-snap)
+
+1. **Pre-installation checks**:
+   - Verifies root privileges
+   - Checks if daemon is already running
+   - Checks CPU governor support
+   - Detects conflicts with GNOME Power Profiles and TLP
+
+2. **Daemon deployment**:
+   - Creates systemd service file
+   - Enables service to start at boot
+   - Starts the daemon immediately
+
+3. **Post-installation**:
+   - Displays success message
+   - Shows daemon status
+   - Provides instructions for viewing stats
+
+### Snap Installation
+
+1. **Pre-installation checks**:
+   - Verifies root privileges
+   - Checks if snap daemon is already enabled
+   - Detects conflicts (GNOME Power Profiles, TLP)
+   - Shows Bluetooth configuration notification
+
+2. **Daemon deployment**:
+   - Sets snap daemon configuration to enabled
+   - Starts and enables auto-cpufreq snap service
+
+3. **Post-installation**:
+   - Displays success message
+   - Shows service status
+
+## Expected Output
+
+After successful installation:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Deploying daemon...
+
+Creating auto-cpufreq systemd service...
+Enabling auto-cpufreq systemd service...
+Starting auto-cpufreq systemd service...
+
+Daemon installed successfully!
+
+View live stats by running:
+auto-cpufreq --stats
+
+-------------------------------------------------------------------------------
+```
+
+## Behavior After Installation
+
+Once installed, the daemon:
+- **Starts automatically** at every boot
+- **Runs in background** continuously
+- **Monitors** battery state and system load
+- **Adjusts** CPU governor and frequencies automatically
+- **Logs** activities to system journal
+- **Respects** configuration file settings (if present)
+
+## Verifying Installation
+
+### Check Daemon Status
+
+**For standard installation:**
+```bash
+sudo systemctl status auto-cpufreq
+```
+
+**For snap installation:**
+```bash
+sudo snap services auto-cpufreq
+```
+
+### View Live Statistics
+
+```bash
+auto-cpufreq --stats
+```
+
+### Check Logs
+
+**For standard installation:**
+```bash
+sudo journalctl -u auto-cpufreq -f
+```
+
+**For snap installation:**
+```bash
+sudo snap logs auto-cpufreq -f
+```
+
+## Notes
+
+- **One-time command**: You only need to run `--install` once
+- **Survives reboots**: Daemon starts automatically after installation
+- **Config file**: Place at `/etc/auto-cpufreq.conf` before installation
+- **Updates**: After updating auto-cpufreq, the daemon restarts automatically
+- **Bluetooth**: Snap installation shows notification about Bluetooth boot settings
+
+## Warnings
+
+### Conflicting Services
+
+If detected, you may need to disable:
+
+**GNOME Power Profiles:**
+```bash
+sudo systemctl stop power-profiles-daemon
+sudo systemctl disable power-profiles-daemon
+```
+
+**TLP:**
+```bash
+sudo systemctl stop tlp
+sudo systemctl disable tlp
+```
+
+### Already Running
+
+If the daemon is already running:
+```
+ERROR: auto-cpufreq daemon is already running.
+
+Run "sudo auto-cpufreq --remove" to remove the daemon.
+```
+
+Remove the existing daemon first:
+```bash
+sudo auto-cpufreq --remove
+sudo auto-cpufreq --install
+```
+
+## Related Commands
+
+- [--remove](/cli/remove) - Uninstall the daemon
+- [--stats](/cli/stats) - View daemon statistics
+- [--update](/cli/update) - Update to latest version
+- [--config](/cli/config) - Configure daemon behavior
+
+## Post-Installation
+
+### Recommended Next Steps
+
+1. **Monitor the daemon**:
+   ```bash
+   auto-cpufreq --stats
+   ```
+
+2. **Review logs** for any issues:
+   ```bash
+   sudo journalctl -u auto-cpufreq -n 50
+   ```
+
+3. **Test battery life** over a few days
+
+4. **Fine-tune** with a config file if needed:
+   - Create `/etc/auto-cpufreq.conf`
+   - Restart daemon: `sudo systemctl restart auto-cpufreq`
+
+## Uninstalling
+
+To remove the daemon and stop automatic optimizations:
+```bash
+sudo auto-cpufreq --remove
+```

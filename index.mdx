@@ -1,97 +1,163 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "auto-cpufreq"
+description: "Automatic CPU speed & power optimizer for Linux"
 ---
 
-## Setting up
+<div style={{
+  background: 'linear-gradient(135deg, #2f2a56 0%, #1a1633 100%)',
+  borderRadius: '12px',
+  padding: '48px 32px',
+  marginBottom: '32px',
+  border: '1px solid rgba(224, 146, 52, 0.3)'
+}}>
+  <h1 style={{
+    fontSize: '48px',
+    fontWeight: '700',
+    color: '#e6e1e9',
+    marginBottom: '16px',
+    fontFamily: 'Georgia, serif'
+  }}>
+    auto-cpufreq
+  </h1>
+  <p style={{
+    fontSize: '20px',
+    color: '#e6e1e9',
+    marginBottom: '32px',
+    fontFamily: 'Arial, sans-serif'
+  }}>
+    Automatic CPU speed & power optimizer for Linux. Actively monitors laptop battery state, CPU usage, temperature, and system load to improve battery life without compromises.
+  </p>
+  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+    <a href="/quickstart" style={{
+      background: '#e09234',
+      color: '#ffffff',
+      padding: '12px 24px',
+      borderRadius: '4px',
+      textDecoration: 'none',
+      fontWeight: '600',
+      fontFamily: 'Arial, sans-serif',
+      display: 'inline-block'
+    }}>
+      Get Started →
+    </a>
+    <a href="https://github.com/AdnanHodzic/auto-cpufreq" style={{
+      background: 'transparent',
+      color: '#ffffff',
+      padding: '12px 24px',
+      borderRadius: '4px',
+      textDecoration: 'none',
+      fontWeight: '600',
+      border: '1px solid #ffffff',
+      fontFamily: 'Arial, sans-serif',
+      display: 'inline-block'
+    }}>
+      View on GitHub
+    </a>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Why auto-cpufreq?
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+One of the problems with Linux on laptops is that the CPU will run in an unoptimized manner which negatively impacts battery life. The CPU may use the "performance" governor with turbo boost enabled regardless of whether it's plugged in or not.
 
-## Make it yours
+auto-cpufreq solves this by automatically making CPU frequency-related changes based on battery state, CPU usage, temperature, and system load — letting the Linux kernel do most of the heavy lifting while providing intelligent optimizations.
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={3}>
+  <Card title="Easy Setup" icon="rocket">
+    Install and forget. Runs as a daemon with zero configuration needed.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Battery Life" icon="battery-full">
+    Extends battery life by intelligently managing CPU frequencies and turbo boost.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Performance" icon="gauge-high">
+    Automatically switches to performance mode when plugged in for maximum speed.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Key Features
 
-Everything you need to create world-class documentation.
+<CardGroup cols={2}>
+  <Card title="Automatic Governor Switching" icon="sliders" href="/advanced/governors">
+    Automatically switches between powersave and performance governors based on battery state and system load.
+  </Card>
+  <Card title="Turbo Boost Management" icon="bolt" href="/advanced/turbo-boost">
+    Intelligently enables or disables CPU turbo boost to balance performance and power consumption.
+  </Card>
+  <Card title="Real-time Monitoring" icon="chart-line" href="/usage/monitor">
+    Monitor CPU frequency, usage, temperature, and battery state in real-time.
+  </Card>
+  <Card title="Battery Thresholds" icon="battery-half" href="/configuration/battery-thresholds">
+    Configure battery charging thresholds on supported devices to extend battery lifespan.
+  </Card>
+  <Card title="Configuration Profiles" icon="file-code" href="/configuration/config-file">
+    Define custom profiles for battery and charger modes with fine-grained control.
+  </Card>
+  <Card title="Temperature Management" icon="temperature-half" href="/advanced/temperature-management">
+    Prevents overheating by adjusting frequencies based on CPU temperature.
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Quick Start
 
-## Need inspiration?
+<Steps>
+  <Step title="Install auto-cpufreq">
+    Clone the repository and run the installer:
+    ```bash
+    git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+    cd auto-cpufreq && sudo ./auto-cpufreq-installer
+    ```
+  </Step>
+  
+  <Step title="Install the daemon">
+    Enable automatic CPU optimizations:
+    ```bash
+    sudo auto-cpufreq --install
+    ```
+  </Step>
+  
+  <Step title="View stats">
+    Monitor the optimizations in real-time:
+    ```bash
+    auto-cpufreq --stats
+    ```
+  </Step>
+</Steps>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## Operating Modes
+
+<CardGroup cols={3}>
+  <Card title="Monitor Mode" icon="eye" href="/usage/monitor">
+    Preview what auto-cpufreq would do without making changes to your system.
+  </Card>
+  <Card title="Live Mode" icon="circle-play" href="/usage/live">
+    Make temporary optimizations that are lost on reboot. Perfect for testing.
+  </Card>
+  <Card title="Daemon Mode" icon="server" href="/usage/daemon">
+    Install as a systemd service for persistent automatic optimizations across reboots.
+  </Card>
+</CardGroup>
+
+## Supported Devices
+
+auto-cpufreq supports laptops and desktops with:
+
+- **Intel** CPUs (all generations)
+- **AMD** CPUs (all generations)  
+- **ARM** CPUs
+
+Works on any Linux distribution with a 5.0+ kernel.
+
+## Community & Support
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/AdnanHodzic/auto-cpufreq">
+    Star the project, report issues, and contribute code.
+  </Card>
+  <Card title="Discord Community" icon="discord" href="https://discord.gg/Sjauxtj6kH">
+    Join the community to discuss features and get help.
+  </Card>
+</CardGroup>
+
+<Note>
+  Before submitting an issue, try using the [auto-cpufreq-genAI-chatbot](https://foolcontrol.org/?p=4903) to get immediate answers to common questions.
+</Note>

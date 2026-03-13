@@ -1,0 +1,233 @@
+---
+title: AUR Installation (Arch Linux)
+description: Install auto-cpufreq on Arch-based distributions using the AUR
+---
+
+## Overview
+
+For Arch Linux and Arch-based distributions, auto-cpufreq is available through the Arch User Repository (AUR). The AUR package is maintained by [MusicalArtist12](https://github.com/MusicalArtist12), [liljaylj](https://github.com/liljaylj), and [parmjotsinghrobot](https://github.com/parmjotsinghrobot).
+
+<Note>
+  There are two AUR packages available: the **Release Package** (recommended) which tracks stable releases, and the **Git Package** which may be outdated.
+</Note>
+
+## Installation
+
+Install auto-cpufreq using your preferred AUR helper:
+
+<CodeGroup>
+```bash yay
+yay -S auto-cpufreq
+```
+
+```bash paru
+paru -S auto-cpufreq
+```
+
+```bash Manual (makepkg)
+git clone https://aur.archlinux.org/auto-cpufreq.git
+cd auto-cpufreq
+makepkg -si
+```
+</CodeGroup>
+
+## Post-Installation Setup
+
+After installing via AUR, the daemon setup process differs from the standard installer.
+
+<Warning>
+  The daemon installer provided in the AUR package does not work the same way as the standard installer. Do not use `auto-cpufreq --install`.
+</Warning>
+
+### Enable and Start the Daemon
+
+Instead of using `auto-cpufreq --install`, enable and start the systemd service directly:
+
+```bash
+sudo systemctl enable --now auto-cpufreq
+```
+
+This command will:
+- Enable the service to start automatically at boot
+- Start the service immediately
+
+### Verify Installation
+
+Check that the daemon is running:
+
+```bash
+systemctl status auto-cpufreq
+```
+
+View live statistics:
+
+```bash
+auto-cpufreq --stats
+```
+
+## Important Notices
+
+<AccordionGroup>
+  <Accordion title="Installation Path Difference">
+    The AUR build process links files to `/usr/share/` instead of `/usr/local/share/` as done by the standard installer. This shouldn't affect normal operation but may matter for troubleshooting.
+  </Accordion>
+  
+  <Accordion title="Git Package (Outdated)">
+    The [Git Package](https://aur.archlinux.org/packages/auto-cpufreq-git) is separately maintained and was last updated on version 1.9.6. It's recommended to use the [Release Package](https://aur.archlinux.org/packages/auto-cpufreq) instead for the latest stable version.
+  </Accordion>
+  
+  <Accordion title="GNOME Power Profiles Daemon">
+    The GNOME Power Profiles daemon is automatically disabled by the standard auto-cpufreq-installer due to conflicts. However, **this doesn't happen with AUR installs**, which can lead to performance issues.
+    
+    You must manually mask the service:
+    
+    ```bash
+    sudo systemctl mask power-profiles-daemon.service
+    ```
+    
+    Then ensure auto-cpufreq is enabled and started:
+    
+    ```bash
+    sudo systemctl enable --now auto-cpufreq.service
+    ```
+    
+    <Warning>
+      Failure to disable GNOME Power Profiles daemon will cause conflicts and issues like [#463](https://github.com/AdnanHodzic/auto-cpufreq/issues/463).
+    </Warning>
+  </Accordion>
+  
+  <Accordion title="TuneD Daemon (Fedora-based Arch derivatives)">
+    If you're using an Arch derivative based on Fedora (like some specialized distributions), TuneD daemon may be enabled by default and conflict with auto-cpufreq.
+    
+    Disable TuneD:
+    
+    ```bash
+    sudo systemctl mask tuned.service
+    sudo systemctl enable --now auto-cpufreq.service
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Configuration
+
+After installation, you can configure auto-cpufreq using the configuration file:
+
+```bash
+sudo nano /etc/auto-cpufreq.conf
+```
+
+See the [Configuration](/configuration/config-file) guide for detailed configuration options.
+
+After making changes, restart the service:
+
+```bash
+sudo systemctl restart auto-cpufreq.service
+```
+
+## Updating
+
+Update auto-cpufreq using your AUR helper:
+
+<CodeGroup>
+```bash yay
+yay -Syu auto-cpufreq
+```
+
+```bash paru
+paru -Syu auto-cpufreq
+```
+</CodeGroup>
+
+<Note>
+  The `auto-cpufreq --update` command will not work for AUR installations. Always use your AUR helper to update.
+</Note>
+
+## Removal
+
+To remove auto-cpufreq:
+
+<Steps>
+  <Step title="Stop and Disable the Service">
+    ```bash
+    sudo systemctl stop auto-cpufreq.service
+    sudo systemctl disable auto-cpufreq.service
+    ```
+  </Step>
+  
+  <Step title="Re-enable GNOME Power Profiles (if applicable)">
+    ```bash
+    sudo systemctl unmask power-profiles-daemon.service
+    sudo systemctl enable --now power-profiles-daemon.service
+    ```
+  </Step>
+  
+  <Step title="Uninstall the Package">
+    ```bash
+    # Using yay
+    yay -R auto-cpufreq
+    
+    # Using paru
+    paru -R auto-cpufreq
+    
+    # Using pacman
+    sudo pacman -R auto-cpufreq
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Daemon Not Starting">
+    Check the service status and logs:
+    
+    ```bash
+    systemctl status auto-cpufreq
+    journalctl -u auto-cpufreq -f
+    ```
+    
+    Common issues:
+    - Conflicting with GNOME Power Profiles daemon (mask it)
+    - Conflicting with TLP (remove TLP)
+    - Permission issues (ensure you used sudo)
+  </Accordion>
+  
+  <Accordion title="Performance Issues">
+    Make sure GNOME Power Profiles daemon is masked:
+    
+    ```bash
+    systemctl status power-profiles-daemon
+    sudo systemctl mask power-profiles-daemon.service
+    sudo systemctl restart auto-cpufreq.service
+    ```
+  </Accordion>
+  
+  <Accordion title="AUR Build Fails">
+    If the AUR build fails:
+    
+    1. Update your system: `sudo pacman -Syu`
+    2. Clear the AUR build cache and try again
+    3. Check the [AUR package page](https://aur.archlinux.org/packages/auto-cpufreq) for comments about known issues
+    4. Fall back to [auto-cpufreq-installer](/installation) if needed
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+If you encounter issues specific to the AUR package:
+
+1. Check the [AUR package comments](https://aur.archlinux.org/packages/auto-cpufreq)
+2. Open an issue on the [auto-cpufreq GitHub](https://github.com/AdnanHodzic/auto-cpufreq/issues)
+3. Join the [Discord server](https://discord.gg/Sjauxtj6kH)
+4. Try the [auto-cpufreq-genAI-chatbot](https://foolcontrol.org/?p=4903)
+
+## Alternative: Standard Installer
+
+If the AUR package doesn't work for your system, you can use the standard installer method:
+
+```bash
+git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+cd auto-cpufreq && sudo ./auto-cpufreq-installer
+```
+
+See the [Installer Guide](/installation) for more details.

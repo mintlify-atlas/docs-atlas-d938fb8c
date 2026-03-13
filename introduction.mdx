@@ -1,0 +1,148 @@
+---
+title: Introduction
+description: Automatic CPU speed & power optimizer for Linux that improves battery life without compromising performance
+---
+
+## What is auto-cpufreq?
+
+auto-cpufreq is an automatic CPU speed and power optimizer for Linux that monitors laptop battery state, CPU usage, CPU temperature, and system load to intelligently manage CPU frequency scaling, governor selection, and turbo boost. It aims to improve battery life without making compromises on performance when you need it.
+
+<Note>
+One of the key problems auto-cpufreq solves is that on many Linux laptops, the CPU runs in an unoptimized manner (often with the "performance" governor and turbo boost enabled) regardless of whether the laptop is plugged in or on battery, which significantly impacts battery life.
+</Note>
+
+## Why auto-cpufreq?
+
+Traditional CPU frequency management tools on Linux have several limitations:
+
+- **Manual tools** like indicator-cpufreq or cpufreq require manual intervention, which is cumbersome
+- **TLP** can help extend battery life but may create problems like losing turbo boost
+- **GNOME Power Profiles** daemon can conflict with custom CPU frequency management
+- Most solutions don't dynamically respond to system load and temperature
+
+auto-cpufreq solves these issues by automatically making CPU frequency-related changes while letting the Linux kernel do most of the heavy lifting.
+
+<Warning>
+auto-cpufreq aims to replace TLP in terms of CPU frequency functionality. After installing auto-cpufreq, it's **strongly recommended to remove TLP**. Using both for the same functionality will lead to unwanted results like overheating. Only use both tools in tandem if you know what you're doing.
+</Warning>
+
+## Key Features
+
+auto-cpufreq provides comprehensive CPU and power management:
+
+### Real-Time Monitoring
+
+- Basic system information
+- CPU frequency (system total & per core)
+- CPU usage (system total & per core) 
+- CPU temperature (total average & per core)
+- Battery state
+- System load
+
+### Intelligent Optimization
+
+CPU frequency scaling, governor selection, and turbo boost management based on:
+
+- **Battery state** - Different profiles for AC power vs. battery
+- **CPU usage** - Per-core and system-wide utilization tracking
+- **Temperature monitoring** - Prevents overheating by combining temperature with utilization data
+- **System load** - Adapts to current workload demands
+
+### Flexible Operation Modes
+
+<CardGroup cols={2}>
+  <Card title="Monitor Mode" icon="eye">
+    View suggestions without making any system changes
+  </Card>
+  <Card title="Live Mode" icon="bolt">
+    Apply temporary optimizations that reset on reboot
+  </Card>
+  <Card title="Daemon Mode" icon="server">
+    Permanent automatic optimizations via systemd service
+  </Card>
+  <Card title="GUI Mode" icon="desktop">
+    Desktop application for easy management (v2.0+)
+  </Card>
+</CardGroup>
+
+### Advanced Configuration
+
+- Custom governor selection (powersave, performance, balanced)
+- Turbo boost control (auto, always, never)
+- Battery charging threshold management
+- Energy Performance Preference (EPP) settings
+- Platform profile support
+- Min/max frequency limits
+
+## Supported Architectures
+
+Only devices with an **Intel**, **AMD**, or **ARM** CPU are supported.
+
+<Note>
+While auto-cpufreq was primarily developed to improve performance and battery life on **laptops**, it can also run on desktops and servers to lower power consumption.
+</Note>
+
+### CPU Drivers
+
+auto-cpufreq works with various CPU frequency scaling drivers:
+
+- `intel_pstate` - Intel's modern CPU driver
+- `amd-pstate` - AMD's modern CPU driver  
+- `acpi-cpufreq` - Generic ACPI-based driver (fallback option)
+
+<Warning>
+If you experience high temperatures, poor scaling, or turbo mode issues with `intel_pstate` or `amd-pstate`, consider switching to `acpi-cpufreq`. See the troubleshooting section in the documentation.
+</Warning>
+
+## Comparison with Alternatives
+
+### auto-cpufreq vs TLP
+
+**TLP** is a comprehensive power management tool that covers many aspects of laptop power saving. However:
+
+- TLP's CPU frequency management can conflict with auto-cpufreq
+- auto-cpufreq provides more dynamic, load-based CPU frequency adjustments
+- TLP may disable turbo boost permanently, while auto-cpufreq enables it intelligently when needed
+
+**Recommendation**: Use auto-cpufreq for CPU frequency management. TLP can be used for other power management features (disk, USB, etc.) if you carefully configure it to not manage CPU frequencies, but this requires expertise.
+
+### auto-cpufreq vs GNOME Power Profiles
+
+**GNOME Power Profiles Daemon** provides simple power/balanced/performance profiles but:
+
+- Does not provide granular, load-based CPU frequency management
+- Conflicts with auto-cpufreq's systemd service
+- Less intelligent about when to enable/disable turbo boost
+
+**Recommendation**: The auto-cpufreq installer automatically disables GNOME Power Profiles daemon to prevent conflicts.
+
+### Compatible Tools
+
+The following tools work well **alongside** auto-cpufreq:
+
+- **thermald** - Intel thermal daemon (recommended to use together)
+- **cpufrequtils** - For manual frequency inspection (won't interfere with auto-cpufreq)
+
+## How It Works
+
+auto-cpufreq uses a balanced approach by default:
+
+1. **Battery State Detection** - Determines if the laptop is on AC power or battery
+2. **System Metrics Collection** - Gathers CPU usage, temperature, and load data
+3. **Governor Selection** - Chooses appropriate CPU governor based on power state and load
+4. **Turbo Management** - Intelligently enables/disables turbo boost to balance performance and efficiency
+5. **Frequency Scaling** - Sets min/max frequency limits based on configuration
+
+The tool operates in the background as a systemd service, continuously monitoring and adjusting CPU settings every few seconds.
+
+## Version Information
+
+<Note>
+Current stable version: **v3.0.0**
+
+GUI support available starting from **v2.0**
+</Note>
+
+## Getting Started
+
+Ready to optimize your Linux laptop's battery life? Continue to the [Installation](/installation) guide to get auto-cpufreq set up on your system, then follow the [Quickstart](/quickstart) guide to start optimizing your CPU.

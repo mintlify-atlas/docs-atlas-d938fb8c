@@ -1,0 +1,116 @@
+---
+title: --monitor
+description: Monitor and view CPU optimization suggestions without applying them
+---
+
+The `--monitor` flag allows you to observe what CPU optimizations auto-cpufreq would apply without actually making any changes to your system. This is useful for understanding the tool's behavior before installing the daemon.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --monitor
+```
+
+## Description
+
+When running in monitor mode, auto-cpufreq:
+- Displays current system information (CPU, battery, temperature)
+- Shows current CPU governor and frequency settings
+- Provides suggestions for optimal governor and frequency settings
+- Updates in real-time without making any changes
+- Detects conflicts with other power management tools
+
+This mode is **read-only** and will not modify any system settings.
+
+## Requirements
+
+- **Root privileges**: Required to read system power information
+- **Interactive terminal**: The monitor runs continuously until stopped
+
+## Example Usage
+
+```bash
+sudo auto-cpufreq --monitor
+```
+
+## Expected Output
+
+The monitor displays a real-time view with information such as:
+
+- Linux distribution and kernel version
+- CPU model and core count
+- Current CPU frequencies for each core
+- Current CPU governor settings
+- Battery status (charging/discharging)
+- Temperature readings
+- Load averages
+- **Suggested optimizations** (what would be applied in live/daemon mode)
+
+## Behavior
+
+### On Startup
+
+1. Checks for conflicts with GNOME Power Profiles and TLP
+2. If conflicts are detected, prompts you to press Enter to continue
+3. Starts displaying real-time system information
+
+### During Monitoring
+
+- Updates system stats continuously
+- Shows different suggestions based on:
+  - Battery state (charging vs. discharging)
+  - System load
+  - Configuration file settings (if using `--config`)
+
+### Exiting
+
+Press `Ctrl+C` to stop monitoring and exit.
+
+## Use Cases
+
+### Before Installation
+
+Run monitor mode to verify auto-cpufreq works correctly on your system:
+```bash
+sudo auto-cpufreq --monitor
+```
+
+Observe the suggestions for a few minutes to ensure they match your expectations.
+
+### Testing Configuration
+
+Test a custom configuration file before installing the daemon:
+```bash
+sudo auto-cpufreq --monitor --config /path/to/config.conf
+```
+
+### Debugging
+
+Use monitor mode to check if auto-cpufreq is detecting your system correctly:
+```bash
+sudo auto-cpufreq --monitor
+```
+
+Look for any warnings or unexpected behavior.
+
+## Notes
+
+- Monitor mode runs indefinitely until you press `Ctrl+C`
+- No system changes are made - it's completely safe to run
+- Can be combined with `--config` to test configuration files
+- Useful for comparing behavior between AC and battery power
+
+## Related Commands
+
+- [--live](/cli/live) - Apply optimizations temporarily
+- [--stats](/cli/stats) - View stats from installed daemon
+- [--config](/cli/config) - Use custom configuration file
+- [--debug](/cli/debug) - Generate detailed debug information
+
+## Warnings
+
+If you see warnings about conflicting services:
+- **GNOME Power Profiles**: May conflict with auto-cpufreq
+- **TLP**: Another power management tool that may interfere
+
+You'll be prompted to press Enter to continue or `Ctrl+C` to exit and resolve the conflicts.

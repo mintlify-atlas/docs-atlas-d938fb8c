@@ -1,0 +1,407 @@
+---
+title: "Temperature Management"
+description: "How auto-cpufreq monitors and manages CPU temperatures"
+---
+
+## Overview
+
+auto-cpufreq monitors CPU temperatures and adjusts frequency scaling to prevent overheating and thermal throttling. This is especially important for laptops with limited cooling capacity.
+
+## CPU Temperature Monitoring
+
+### Reading Temperature Sensors
+
+auto-cpufreq uses the `psutil` library to read CPU temperatures:
+
+```python
+import psutil
+
+def get_cpu_temperature():
+    """
+    Get current CPU temperature from sensors
+    """
+    temps = psutil.sensors_temperatures()
+    
+    # Try different sensor names depending on CPU
+    for sensor_name in ['coretemp', 'k10temp', 'zenpower', 'cpu_thermal']:
+        if sensor_name in temps:
+            # Get average of all core temperatures
+            core_temps = [t.current for t in temps[sensor_name]]
+            return sum(core_temps) / len(core_temps)
+    
+    return None
+```
+
+### Temperature Sources
+
+Different CPUs expose temperatures through different kernel modules:
+
+<Tabs>
+  <Tab title="Intel CPUs">
+    **Module**: `coretemp`
+    
+    ```bash
+    # Check if module is loaded
+    lsmod | grep coretemp
+    
+    # View temperature sensors
+    sensors
+    ```
+    
+    Provides per-core and package temperatures.
+  </Tab>
+  
+  <Tab title="AMD CPUs (Zen 2+)">
+    **Module**: `k10temp` or `zenpower`
+    
+    ```bash
+    # Check if module is loaded  
+    lsmod | grep -E "k10temp|zenpower"
+    
+    # View temperature sensors
+    sensors
+    ```
+    
+    Provides Tdie (die temperature) and Tctl (control temperature).
+  </Tab>
+  
+  <Tab title="ARM CPUs">
+    **Module**: `cpu_thermal` or device-specific
+    
+    ```bash
+    # Check thermal zones
+    cat /sys/class/thermal/thermal_zone*/type
+    cat /sys/class/thermal/thermal_zone*/temp
+    ```
+    
+    Temperature reporting varies by SoC.
+  </Tab>
+</Tabs>
+
+## Temperature-Based Decisions
+
+auto-cpufreq uses temperature data to make intelligent decisions:
+
+### Turbo Boost Disabling
+
+When CPU temperature exceeds safe thresholds, turbo boost is automatically disabled:
+
+```python
+def manage_turbo_with_temp():
+    """
+    Manage turbo boost based on temperature
+    """
+    temp = get_cpu_temperature()
+    
+    if temp is not None:
+        # Disable turbo if temperature is high
+        if temp > 80:
+            print(f"High temperature detected: {temp}°C")
+            print("Disabling turbo boost to reduce heat")
+            turbo(False)
+        # Re-enable turbo if temperature is safe
+        elif temp < 70 and charging():
+            turbo(True)
+```
+
+**Temperature thresholds**:
+- **80°C+**: Disable turbo boost
+- **70-80°C**: Monitor closely
+- **Below 70°C**: Safe for turbo boost
+
+These are conservative defaults. Modern CPUs can safely operate up to 100°C, but sustained high temperatures reduce lifespan.
+
+### Frequency Scaling
+
+In extreme cases, auto-cpufreq can also reduce maximum frequency:
+
+```python
+def thermal_throttle_prevention():
+    """
+    Prevent thermal throttling by reducing max frequency
+    """
+    temp = get_cpu_temperature()
+    
+    if temp > 90:
+        # Critical temperature - reduce max frequency
+        print(f"Critical temperature: {temp}°C")
+        print("Reducing maximum CPU frequency")
+        
+        # Get current max frequency
+        current_max = get_scaling_max_freq()
+        
+        # Reduce by 20%
+        new_max = int(current_max * 0.8)
+        set_scaling_max_freq(new_max)
+```
+
+This prevents the CPU from thermal throttling itself, which can cause:
+- Performance degradation
+- System instability
+- Shortened hardware lifespan
+
+## Load + Temperature Decisions
+
+auto-cpufreq combines CPU load and temperature for optimal decisions:
+
+```python
+def set_autofreq():
+    """
+    Automatic frequency scaling based on load and temperature
+    """
+    load1m = psutil.getloadavg()[0]
+    temp = get_cpu_temperature()
+    
+    if charging():
+        # On AC power
+        if temp > 85:
+            # High temp - use powersave even on AC
+            set_powersave()
+            turbo(False)
+        elif load1m > performance_load_threshold:
+            # Normal temp, high load - use performance
+            set_performance()
+            turbo(True if temp < 80 else False)
+        else:
+            # Normal temp, low load - balanced
+            set_balanced()
+    else:
+        # On battery - always prioritize power savings
+        set_powersave()
+        turbo(False)
+```
+
+This matrix shows the decision logic:
+
+| Power | Load | Temperature | Governor | Turbo |
+|-------|------|-------------|----------|-------|
+| AC | High | Normal (below 80°C) | Performance | Enabled |
+| AC | High | High (80-85°C) | Performance | Disabled |
+| AC | High | Critical (above 85°C) | Powersave | Disabled |
+| AC | Low | Any | Balanced | Temp-based |
+| Battery | Any | Any | Powersave | Disabled |
+
+## Monitoring CPU Temperature
+
+### Using auto-cpufreq
+
+```bash
+# Monitor mode shows live temperature
+sudo auto-cpufreq --monitor
+
+# Stats mode (daemon running)
+auto-cpufreq --stats
+```
+
+Example output:
+
+```
+CPU Temperature:
+  Package: 65°C
+  Core 0: 63°C
+  Core 1: 67°C
+  Core 2: 64°C
+  Core 3: 66°C
+  Average: 65°C
+```
+
+### Using System Tools
+
+<CodeGroup>
+
+```bash sensors
+# lm-sensors package required
+sudo sensors
+
+# Example output:
+coretemp-isa-0000
+Adapter: ISA adapter
+Package id 0:  +65.0°C
+Core 0:        +63.0°C
+Core 1:        +67.0°C
+Core 2:        +64.0°C  
+Core 3:        +66.0°C
+```
+
+```bash watch
+# Monitor temperature continuously
+watch -n 1 sensors
+```
+
+```bash sysfs
+# Raw sysfs readings (Intel)
+cat /sys/class/thermal/thermal_zone*/temp
+
+# Output is in millidegrees Celsius
+# e.g., 65000 = 65°C
+```
+
+</CodeGroup>
+
+## Preventing Thermal Issues
+
+### Configuration for Hot Systems
+
+If your laptop runs hot, use an aggressive cooling configuration:
+
+```ini
+[charger]
+governor = powersave  # Use powersave even on AC
+turbo = never         # Never enable turbo
+scaling_max_freq = 2400000  # Cap frequency below max
+energy_performance_preference = power
+
+[battery]
+governor = powersave
+turbo = never
+scaling_max_freq = 1800000  # Even lower cap on battery
+```
+
+This sacrifices performance for thermal headroom.
+
+### Hybrid Approach
+
+Allow turbo boost only when temperatures are safe:
+
+```ini
+[charger]
+governor = performance
+turbo = auto  # Let auto-cpufreq decide based on temp
+
+[battery]
+governor = powersave
+turbo = never
+```
+
+With `turbo = auto`, auto-cpufreq will:
+- Enable turbo when temp < 80°C and load is high
+- Disable turbo when temp > 80°C
+- Dynamically adjust based on conditions
+
+## Thermal Throttling vs Prevention
+
+### Thermal Throttling (Bad)
+
+When CPU gets too hot, it automatically reduces frequency to cool down:
+
+- **Triggered by**: CPU reaching ~100°C (varies by model)
+- **Effect**: Sudden performance drops, stuttering
+- **Indicator**: `dmesg` shows "CPU thermal throttling" messages
+- **Problem**: Emergency response, degrades user experience
+
+```bash
+# Check for thermal throttling events
+sudo dmesg | grep -i "thermal"
+```
+
+### Proactive Prevention (Good)
+
+auto-cpufreq prevents thermal throttling by:
+
+- **Monitoring**: Continuously check temperature
+- **Acting early**: Disable turbo at 80°C, before emergency throttling
+- **Gradual adjustment**: Smooth frequency changes
+- **Better experience**: Consistent performance, no sudden drops
+
+## Improving Laptop Cooling
+
+If you consistently see high temperatures, consider:
+
+<Steps>
+  <Step title="Clean vents and fans">
+    Dust buildup reduces cooling efficiency. Use compressed air to clean vents.
+  </Step>
+  
+  <Step title="Elevate laptop">
+    Use a laptop stand to improve airflow underneath.
+  </Step>
+  
+  <Step title="Repaste thermal compound">
+    Old thermal paste degrades over time. Replacing it can reduce temperatures by 10-20°C.
+  </Step>
+  
+  <Step title="Use cooling pad">
+    External cooling pads with fans can help, especially for gaming laptops.
+  </Step>
+  
+  <Step title="Undervolt CPU (advanced)">
+    Tools like `intel-undervolt` can reduce voltage for lower temperatures. **Use with caution** - incorrect values can cause instability.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Temperature not shown in stats">
+    Install lm-sensors:
+    
+    ```bash
+    # Debian/Ubuntu
+    sudo apt install lm-sensors
+    
+    # Arch
+    sudo pacman -S lm_sensors
+    
+    # Fedora
+    sudo dnf install lm_sensors
+    
+    # Detect sensors
+    sudo sensors-detect
+    ```
+    
+    Answer "yes" to all questions, then reboot.
+  </Accordion>
+  
+  <Accordion title="Temperature readings seem wrong">
+    Different sensors report different values:
+    - **Tdie**: Actual die temperature (most accurate)
+    - **Tctl**: Control temperature (may have offset)
+    - **Package**: Overall CPU package temperature
+    
+    Use Package or Tdie for most accurate readings.
+  </Accordion>
+  
+  <Accordion title="CPU still thermal throttling">
+    Check if auto-cpufreq is managing turbo:
+    
+    ```bash
+    auto-cpufreq --stats
+    ```
+    
+    If turbo is enabled at high temps, you may have:
+    - Config file forcing `turbo = always`
+    - Turbo override set with `--turbo=always`
+    
+    Reset with:
+    
+    ```bash
+    sudo auto-cpufreq --turbo=auto
+    ```
+  </Accordion>
+  
+  <Accordion title="Temperatures higher after installing auto-cpufreq">
+    This can happen if:
+    - You were previously using TLP with conservative settings
+    - BIOS has aggressive fan curves that conflict
+    - Previous power management was limiting performance
+    
+    Tune the config file to be more conservative (see examples above).
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Turbo Boost" icon="bolt" href="/advanced/turbo-boost">
+    Turbo boost is the primary thermal management tool
+  </Card>
+  <Card title="Config File" icon="file-code" href="/configuration/config-file">
+    Configure temperature-aware settings
+  </Card>
+  <Card title="How It Works" icon="gears" href="/advanced/how-it-works">
+    Understanding auto-cpufreq's decision algorithm
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Fix common temperature-related issues
+  </Card>
+</CardGroup>

@@ -1,0 +1,366 @@
+---
+title: "Live Mode"
+description: "Apply temporary CPU optimizations for testing and evaluation"
+---
+
+Live mode applies auto-cpufreq optimizations in real-time, but the changes are temporary and revert when you stop the process. This is ideal for testing before permanent installation.
+
+## Starting Live Mode
+
+Run auto-cpufreq with the `--live` flag:
+
+```bash
+sudo auto-cpufreq --live
+```
+
+<Warning>
+  Root privileges are required because live mode modifies system CPU settings.
+</Warning>
+
+## How Live Mode Works
+
+When you start live mode:
+
+1. **Conflict Detection**: Checks for conflicting services (TLP, GNOME Power Profiles)
+2. **Service Suspension**: Temporarily stops conflicting services
+3. **Optimization Start**: Begins applying CPU frequency scaling
+4. **Real-time Updates**: Shows current optimizations in the display
+5. **Continuous Monitoring**: Updates every 2 seconds based on system load
+
+### What Gets Modified
+
+Live mode actively changes:
+
+- **CPU Governor**: Switches between `performance` and `powersave`
+- **Turbo Boost**: Enables/disables based on load and temperature
+- **Energy Performance Preference (EPP)**: Adjusts for optimal efficiency
+- **Energy Performance Bias (EPB)**: Fine-tunes power/performance balance
+- **CPU Frequencies**: Sets min/max frequencies (if configured)
+- **Platform Profile**: Adjusts system platform profile (if supported)
+
+## Live Mode Display
+
+The display is similar to monitor mode but shows actions being taken:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            Live Mode - 15:42:18                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+System Information                    │  Battery Stats
+                                      │  
+Linux distro: Fedora 39              │  Battery status: charging
+Linux kernel: 6.7.5-200              │  Battery percentage: 45%
+Processor: AMD Ryzen 7 5800H         │  AC plugged: Yes
+Cores: 16                             │  
+Architecture: x86_64                  │  CPU Frequency Scaling
+Driver: acpi-cpufreq                  │  
+                                      │  Setting to use: "performance" governor
+Current CPU Stats                     │  Setting to use: "performance" EPP
+                                      │  Setting to use: "balance_performance" EPB
+CPU max frequency: 4463 MHz           │  
+CPU min frequency: 1400 MHz           │  System Statistics
+                                      │  
+Core    Usage   Temperature Frequency │  Total CPU usage: 45.8 %
+CPU0    52.3%    68 °C      3800 MHz  │  Total system load: 2.43
+CPU1    41.2%    66 °C      3600 MHz  │  Average temp. of all cores: 67.50 °C
+CPU2    38.5%    65 °C      3500 MHz  │  High CPU load (load average: 2.43, 2.15, 1.87)
+CPU3    55.7%    70 °C      4000 MHz  │  Optimal total CPU usage: 45.8%, normal average
+...                                   │  core temp: 67.5°C
+                                      │  Setting turbo boost: On
+
+Press Q or Ctrl+C to quit | Use ↑↓ or PageUp/PageDown to scroll
+```
+
+<Info>
+  Notice there are no yellow suggestions - live mode shows what's actually being set, not what should be set.
+</Info>
+
+## Dynamic Behavior
+
+### Power Source Detection
+
+Live mode continuously monitors your power source:
+
+<Tabs>
+  <Tab title="On AC Power (Charging)">
+    ```text
+    Battery is: charging
+
+    Setting to use: "performance" governor
+    Setting to use: "performance" EPP
+    Setting to use: "balance_performance" EPB
+    ```
+    
+    - Prioritizes performance
+    - Enables turbo boost for high loads
+    - Uses higher frequencies
+  </Tab>
+  <Tab title="On Battery (Discharging)">
+    ```text
+    Battery is: discharging
+
+    Setting to use: "powersave" governor
+    Setting to use: "balance_power" EPP
+    Setting to use: "balance_power" EPB
+    ```
+    
+    - Prioritizes energy efficiency
+    - Conservative turbo boost usage
+    - Lower frequencies when possible
+  </Tab>
+</Tabs>
+
+When you plug in or unplug your laptop, live mode automatically adjusts within 2 seconds.
+
+### Turbo Boost Management
+
+Live mode intelligently manages turbo boost:
+
+#### On Battery
+
+```text
+Optimal total CPU usage: 15.2%, high average core temp: 58°C
+Setting turbo boost: off
+```
+
+- **Disabled** when load is low and temperature is elevated
+- **Enabled** when CPU usage exceeds 20%
+
+#### On AC Power
+
+```text
+High CPU load (load average: 3.21, 2.87, 2.45)
+Setting turbo boost: on
+```
+
+- **Enabled** for high CPU load or heavy workloads
+- **Disabled** when temperature exceeds 65-70°C with optimal load
+
+## Testing Configuration Files
+
+Live mode is perfect for testing custom configurations:
+
+```bash
+sudo auto-cpufreq --live --config=/path/to/auto-cpufreq.conf
+```
+
+### Example Configuration Test
+
+Create a test configuration:
+
+```ini /tmp/test-config.conf
+[charger]
+governor = performance
+turbo = always
+scaling_min_freq = 2000000
+scaling_max_freq = 4500000
+
+[battery]
+governor = powersave
+turbo = auto
+scaling_min_freq = 1000000
+scaling_max_freq = 3000000
+```
+
+Test it with live mode:
+
+```bash
+sudo auto-cpufreq --live --config=/tmp/test-config.conf
+```
+
+Observe the display to verify:
+- Correct governor is applied
+- Frequency limits are respected
+- Turbo behavior matches your settings
+
+<Tip>
+  Press `Ctrl+C` to stop live mode and test different configuration values without permanently changing your system.
+</Tip>
+
+## Stopping Live Mode
+
+To exit live mode, press **Q** or **Ctrl+C**.
+
+### What Happens on Exit
+
+When you stop live mode, the cleanup process:
+
+1. **Stops optimization thread**: Halts the background optimization loop
+2. **Restores services**: Re-enables GNOME Power Profiles or tuned if they were stopped
+3. **Restores cpufreqctl**: Removes the temporary cpufreq control script
+4. **Exits cleanly**: Returns your system to its pre-live state
+
+```bash
+^C  # Press Ctrl+C
+# Cleanup happens automatically
+# Services restored
+# System returns to previous state
+```
+
+<Check>
+  All changes made by live mode are temporary and revert when you exit.
+</Check>
+
+## Comparing with Monitor Mode
+
+| Aspect | Monitor Mode | Live Mode |
+|--------|-------------|----------|
+| Makes changes | ❌ No | ✅ Yes |
+| Shows suggestions | ✅ Yellow highlights | ❌ Shows actions taken |
+| Governor changes | ❌ View only | ✅ Applied in real-time |
+| Turbo changes | ❌ View only | ✅ Applied dynamically |
+| Service suspension | ❌ No | ✅ Yes (TLP, GNOME PP) |
+| Changes persist | N/A | ❌ No (reverts on exit) |
+| Root required | ✅ Yes | ✅ Yes |
+| Use case | Learning, observation | Testing, evaluation |
+
+## Common Use Cases
+
+### 1. Pre-Installation Testing
+
+Before installing the daemon:
+
+```bash
+# First, observe with monitor mode
+sudo auto-cpufreq --monitor
+# Press Ctrl+C to exit
+
+# Then, test with live mode
+sudo auto-cpufreq --live
+# Use your computer normally for 10-15 minutes
+# Press Ctrl+C when satisfied
+
+# Finally, install the daemon
+sudo auto-cpufreq --install
+```
+
+### 2. Configuration Validation
+
+Test multiple configurations:
+
+```bash
+# Test aggressive performance config
+sudo auto-cpufreq --live --config=/etc/auto-cpufreq.conf.performance
+# Monitor for 5 minutes, press Ctrl+C
+
+# Test balanced config
+sudo auto-cpufreq --live --config=/etc/auto-cpufreq.conf.balanced
+# Monitor for 5 minutes, press Ctrl+C
+
+# Choose the best configuration
+```
+
+### 3. Troubleshooting
+
+Diagnose issues without permanent changes:
+
+```bash
+# Run with debug output
+sudo auto-cpufreq --live --debug
+
+# Or check specific behavior
+sudo auto-cpufreq --live --force=performance
+```
+
+### 4. Temporary Performance Boost
+
+Need optimizations for a single session:
+
+```bash
+# Start live mode before intensive work
+sudo auto-cpufreq --live
+
+# Do your work (gaming, rendering, compiling)
+# ...
+
+# Press Ctrl+C when done
+# System returns to normal
+```
+
+## Conflict Resolution
+
+### TLP Service Conflict
+
+```text
+TLP service detected. TLP can conflict with auto-cpufreq.
+For best results, consider disabling TLP or use auto-cpufreq --monitor instead.
+
+Press Enter to continue or Ctrl+C to exit...
+```
+
+Live mode will wait for your confirmation before proceeding.
+
+### GNOME Power Profiles Daemon
+
+```text
+GNOME Power Profiles Daemon detected.
+auto-cpufreq will temporarily stop it to avoid conflicts.
+
+Press Enter to continue or Ctrl+C to exit...
+```
+
+The daemon is stopped during live mode and restarted on exit.
+
+## Performance Monitoring
+
+While in live mode, watch for:
+
+<Steps>
+  <Step title="Temperature Changes">
+    Monitor the average core temperature to ensure optimizations don't cause overheating.
+  </Step>
+  <Step title="Governor Switches">
+    Watch when the governor changes between performance and powersave as you plug/unplug AC.
+  </Step>
+  <Step title="Turbo Behavior">
+    Observe when turbo boost is enabled/disabled based on load and temperature.
+  </Step>
+  <Step title="Frequency Scaling">
+    Check that CPU frequencies adjust appropriately for your workload.
+  </Step>
+</Steps>
+
+## Limitations
+
+<Warning>
+  **Cannot Run Alongside Daemon**
+  
+  If the auto-cpufreq daemon is installed and running:
+  
+  ```bash
+  sudo auto-cpufreq --live
+  ```
+  
+  ```text
+  ERROR: auto-cpufreq is running in daemon mode.
+  
+  Make sure to stop the daemon before running with --live or --monitor mode
+  ```
+  
+  Remove the daemon first:
+  ```bash
+  sudo auto-cpufreq --remove
+  ```
+</Warning>
+
+<Info>
+  Live mode requires continuous execution. If you close the terminal or lose connection, optimizations stop immediately.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Install Daemon" icon="server" href="/usage/daemon">
+    Ready for permanent optimization? Install the daemon
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/config-file">
+    Customize optimization behavior
+  </Card>
+  <Card title="Monitor Mode" icon="eye" href="/usage/monitor">
+    Go back to safe observation mode
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Resolve common issues
+  </Card>
+</CardGroup>

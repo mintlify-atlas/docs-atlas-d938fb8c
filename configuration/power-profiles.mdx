@@ -1,0 +1,515 @@
+---
+title: Power Profiles & Conflicts
+description: Handle conflicts with GNOME Power Profiles daemon and other power management services
+---
+
+auto-cpufreq can conflict with other power management services running on your system. This page explains how to detect and resolve these conflicts.
+
+## Overview
+
+Linux systems may have multiple power management tools installed:
+
+- **GNOME Power Profiles Daemon** - GNOME's built-in power management
+- **TLP** - Advanced power management tool
+- **TuneD** - System tuning daemon
+- **laptop-mode-tools** - Older power management suite
+
+Running multiple power management tools simultaneously can cause:
+- Settings being overwritten
+- Conflicting governor changes
+- Unexpected power behavior
+- Performance issues
+
+<Warning>
+  Only one power management tool should manage CPU frequency at a time. Using multiple tools can lead to unpredictable behavior.
+</Warning>
+
+## GNOME Power Profiles Daemon
+
+### Detection
+
+auto-cpufreq automatically detects if GNOME Power Profiles daemon is running:
+
+```bash
+sudo auto-cpufreq --monitor
+```
+
+If the daemon is running, you'll see:
+
+```
+----------------------------------- Warning -----------------------------------
+
+Detected running GNOME Power Profiles daemon service!
+
+This daemon might interfere with auto-cpufreq and will be automatically
+disabled when auto-cpufreq daemon is installed and
+it will be re-enabled after auto-cpufreq is removed.
+```
+
+### Automatic Handling
+
+When you install auto-cpufreq, it automatically:
+
+1. **Stops** the GNOME Power Profiles daemon
+2. **Disables** it from starting on boot
+3. **Masks** the service to prevent accidental re-enabling
+
+```bash
+sudo auto-cpufreq --install
+```
+
+This runs the equivalent of:
+
+```bash
+sudo systemctl stop power-profiles-daemon
+sudo systemctl disable power-profiles-daemon
+sudo systemctl mask power-profiles-daemon
+```
+
+### Re-enabling Power Profiles Daemon
+
+When you remove auto-cpufreq, the daemon is automatically re-enabled:
+
+```bash
+sudo auto-cpufreq --remove
+```
+
+Or manually re-enable it:
+
+```bash
+sudo systemctl unmask power-profiles-daemon
+sudo systemctl enable power-profiles-daemon
+sudo systemctl start power-profiles-daemon
+```
+
+## Using power_helper.py
+
+For Snap installations or manual control, use the `power_helper.py` script:
+
+### Disable GNOME Power Profiles
+
+```bash
+git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+cd auto-cpufreq
+sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+```
+
+### Enable GNOME Power Profiles
+
+```bash
+sudo python3 -m auto_cpufreq.power_helper --gnome_power_enable
+```
+
+### Check Status
+
+```bash
+sudo python3 -m auto_cpufreq.power_helper --gnome_power_status
+```
+
+<Info>
+  The `power_helper.py` script is primarily needed for Snap package installations due to confinement limitations.
+</Info>
+
+## Snap Package Considerations
+
+Snap packages have confinement limitations that prevent automatic service management.
+
+### Manual Intervention Required
+
+With Snap installations, you must manually disable conflicting services:
+
+```bash
+# Clone repository
+git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+cd auto-cpufreq
+
+# Disable GNOME Power Profiles daemon
+sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+
+# Optional: Disable Bluetooth on boot to save power
+sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+```
+
+<Warning>
+  If you see a warning about snap confinement, you must use `power_helper.py` to manage power profiles.
+</Warning>
+
+### Snap Detection Warning
+
+With snap installations, you'll see:
+
+```
+----------------------------------- Warning -----------------------------------
+
+Unable to detect state of GNOME Power Profiles daemon service!
+This daemon might interfere with auto-cpufreq and should be disabled!
+
+Steps to perform this action using auto-cpufreq: power_helper script:
+git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+python3 -m auto_cpufreq.power_helper --gnome_power_disable
+
+Reference: https://github.com/AdnanHodzic/auto-cpufreq#configuring-auto-cpufreq
+```
+
+## TLP Conflict
+
+### Detection
+
+auto-cpufreq detects if TLP is installed and running:
+
+```bash
+sudo auto-cpufreq --monitor
+```
+
+If TLP is active, you'll see:
+
+```
+----------------------------------- Warning -----------------------------------
+
+Detected you are running a TLP service!
+This daemon might interfere with auto-cpufreq which can lead to unexpected results.
+We strongly encourage you to remove TLP unless you really know what you are doing.
+```
+
+### Resolution
+
+<Tabs>
+  <Tab title="Remove TLP (Recommended)">
+    The recommended approach is to remove TLP:
+    
+    ```bash
+    # Debian/Ubuntu
+    sudo apt remove tlp tlp-rdw
+    
+    # Fedora
+    sudo dnf remove tlp tlp-rdw
+    
+    # Arch
+    sudo pacman -R tlp tlp-rdw
+    ```
+  </Tab>
+  
+  <Tab title="Disable TLP Service">
+    Alternatively, disable TLP without removing it:
+    
+    ```bash
+    sudo systemctl stop tlp
+    sudo systemctl disable tlp
+    sudo systemctl mask tlp
+    ```
+  </Tab>
+  
+  <Tab title="Use Both (Advanced)">
+    Advanced users can run both, but must carefully configure them to manage different aspects:
+    
+    **Not recommended** - can lead to conflicts
+    
+    If you choose this route:
+    - Configure TLP to not manage CPU frequency
+    - Let auto-cpufreq handle CPU frequency only
+    - Let TLP handle other power features
+    
+    Requires manual TLP configuration editing.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Using both TLP and auto-cpufreq simultaneously is not officially supported and may cause issues.
+</Warning>
+
+## TuneD Conflict
+
+### Detection and Handling
+
+auto-cpufreq automatically handles TuneD daemon:
+
+- **In `--live` mode:** TuneD is temporarily stopped
+- **When daemon is installed:** TuneD is disabled and masked
+- **When daemon is removed:** TuneD is re-enabled
+
+### Manual Control
+
+Disable TuneD manually:
+
+```bash
+sudo systemctl stop tuned
+sudo systemctl disable tuned
+sudo systemctl mask tuned
+```
+
+Re-enable TuneD:
+
+```bash
+sudo systemctl unmask tuned
+sudo systemctl enable tuned
+sudo systemctl start tuned
+```
+
+## Checking for Conflicts
+
+### Check Running Services
+
+```bash
+# Check GNOME Power Profiles
+systemctl status power-profiles-daemon
+
+# Check TLP
+systemctl status tlp
+
+# Check TuneD
+systemctl status tuned
+
+# Check laptop-mode-tools
+systemctl status laptop-mode
+```
+
+### List Active Power Management
+
+```bash
+# Check all power-related services
+systemctl list-units --type=service --state=running | grep -iE "power|tlp|tuned|cpufreq"
+```
+
+### auto-cpufreq Detection
+
+Use auto-cpufreq's built-in detection:
+
+```bash
+sudo auto-cpufreq --monitor
+```
+
+Look for warning messages about conflicting services.
+
+## Live Mode Behavior
+
+When using `--live` mode, auto-cpufreq temporarily manages conflicts:
+
+```bash
+sudo auto-cpufreq --live
+```
+
+**Automatic actions:**
+1. Sets GNOME Power Profiles to "balanced"
+2. Stops power-profiles-daemon service
+3. Stops tuned service
+4. Applies auto-cpufreq settings
+
+**On exit (Ctrl+C):**
+1. Restores GNOME Power Profiles daemon
+2. Restarts tuned service
+3. Restores original CPU frequencies
+
+<Tip>
+  Use `--live` mode to test auto-cpufreq without permanently disabling other services.
+</Tip>
+
+## power_helper.py Reference
+
+The `power_helper.py` script provides additional power management utilities:
+
+### Available Options
+
+<ParamField path="--gnome_power_disable" type="flag">
+  Disable GNOME Power Profiles daemon
+  
+  ```bash
+  sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+  ```
+</ParamField>
+
+<ParamField path="--gnome_power_enable" type="flag">
+  Enable GNOME Power Profiles daemon
+  
+  ```bash
+  sudo python3 -m auto_cpufreq.power_helper --gnome_power_enable
+  ```
+</ParamField>
+
+<ParamField path="--gnome_power_status" type="flag">
+  Check GNOME Power Profiles daemon status
+  
+  ```bash
+  sudo python3 -m auto_cpufreq.power_helper --gnome_power_status
+  ```
+</ParamField>
+
+<ParamField path="--bluetooth_boot_off" type="flag">
+  Disable Bluetooth on boot (power saving)
+  
+  ```bash
+  sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+  ```
+</ParamField>
+
+<ParamField path="--bluetooth_boot_on" type="flag">
+  Enable Bluetooth on boot
+  
+  ```bash
+  sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_on
+  ```
+</ParamField>
+
+### Usage Examples
+
+```bash
+# Get help
+sudo python3 -m auto_cpufreq.power_helper --help
+
+# Disable power profiles and bluetooth for maximum battery
+sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+
+# Check status
+sudo python3 -m auto_cpufreq.power_helper --gnome_power_status
+```
+
+## Bluetooth Power Management
+
+The `power_helper.py` script can also manage Bluetooth power settings:
+
+### Disable Bluetooth on Boot
+
+Save power by disabling Bluetooth on boot:
+
+```bash
+# Standard installation
+sudo auto-cpufreq --bluetooth_boot_off
+
+# OR via power_helper (Snap installations)
+sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+```
+
+This modifies `/etc/bluetooth/main.conf` to set `AutoEnable=false`.
+
+### Enable Bluetooth on Boot
+
+```bash
+# Standard installation
+sudo auto-cpufreq --bluetooth_boot_on
+
+# OR via power_helper (Snap installations)
+sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_on
+```
+
+<Info>
+  Bluetooth can be manually enabled after boot when needed, even with auto-enable disabled.
+</Info>
+
+## Best Practices
+
+<Steps>
+  <Step title="Choose one power management tool">
+    Decide on a single tool for CPU frequency management:
+    - auto-cpufreq (automatic, simple)
+    - TLP (advanced, manual configuration)
+    - GNOME Power Profiles (basic, desktop integrated)
+  </Step>
+  
+  <Step title="Disable conflicting services">
+    Disable all other power management services before installing your chosen tool.
+  </Step>
+  
+  <Step title="Test before installing daemon">
+    Use `--monitor` or `--live` mode to test:
+    ```bash
+    sudo auto-cpufreq --monitor
+    sudo auto-cpufreq --live
+    ```
+  </Step>
+  
+  <Step title="Monitor for issues">
+    After installation, monitor for:
+    - Unexpected governor changes
+    - Performance issues
+    - Battery drain
+    ```bash
+    sudo auto-cpufreq --stats
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Governor keeps changing unexpectedly">
+    Check for conflicting services:
+    ```bash
+    systemctl status power-profiles-daemon
+    systemctl status tlp
+    systemctl status tuned
+    ```
+    
+    Disable any running conflicting services:
+    ```bash
+    sudo systemctl stop power-profiles-daemon
+    sudo systemctl disable power-profiles-daemon
+    sudo systemctl mask power-profiles-daemon
+    ```
+  </Accordion>
+  
+  <Accordion title="Can't disable power-profiles-daemon (Snap)">
+    Snap packages can't modify system services. Use `power_helper.py`:
+    ```bash
+    git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+    cd auto-cpufreq
+    sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+    ```
+  </Accordion>
+  
+  <Accordion title="Settings not persisting after reboot">
+    1. Ensure auto-cpufreq daemon is enabled:
+       ```bash
+       sudo systemctl enable auto-cpufreq
+       ```
+    
+    2. Check if conflicting service is starting on boot:
+       ```bash
+       systemctl is-enabled power-profiles-daemon
+       systemctl is-enabled tlp
+       ```
+    
+    3. Mask conflicting services:
+       ```bash
+       sudo systemctl mask power-profiles-daemon
+       ```
+  </Accordion>
+  
+  <Accordion title="Want to switch back to GNOME Power Profiles">
+    1. Remove auto-cpufreq:
+       ```bash
+       sudo auto-cpufreq --remove
+       ```
+    
+    2. Verify power-profiles-daemon is enabled:
+       ```bash
+       systemctl status power-profiles-daemon
+       ```
+    
+    3. If not running, enable it:
+       ```bash
+       sudo systemctl unmask power-profiles-daemon
+       sudo systemctl enable power-profiles-daemon
+       sudo systemctl start power-profiles-daemon
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Installation" href="/installation">
+    Install auto-cpufreq daemon
+  </Card>
+  
+  <Card title="Live Mode" href="/usage/live">
+    Test without disabling services
+  </Card>
+  
+  <Card title="Configuration File" href="/configuration/config-file">
+    Configure auto-cpufreq settings
+  </Card>
+  
+  <Card title="Troubleshooting" href="/guides/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>

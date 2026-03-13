@@ -1,0 +1,285 @@
+---
+title: --update
+description: Update auto-cpufreq to the latest version
+---
+
+The `--update` flag updates auto-cpufreq to the latest release available on GitHub, including both the package and daemon.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --update
+```
+
+### Update to Custom Directory
+
+```bash
+sudo auto-cpufreq --update=/path/to/custom/directory
+```
+
+Or:
+
+```bash
+sudo auto-cpufreq --update /path/to/custom/directory
+```
+
+## Description
+
+The update process:
+- Checks for available updates on GitHub
+- Downloads the latest release
+- Removes the existing daemon
+- Installs the new version
+- Re-enables the daemon
+- Preserves your configuration
+
+## Requirements
+
+- **Root privileges**: Required to update system files and services
+- **Internet connection**: Required to download latest release
+- **Git installation**: Standard installation method only
+
+## Installation Method Detection
+
+The update behavior depends on how auto-cpufreq was installed:
+
+### Snap Installation
+
+If installed via snap:
+```bash
+sudo auto-cpufreq --update
+```
+
+Output:
+```
+Detected auto-cpufreq was installed using snap
+Please update using snap package manager, i.e: `sudo snap refresh auto-cpufreq`.
+```
+
+**Use snap to update:**
+```bash
+sudo snap refresh auto-cpufreq
+```
+
+### AUR Installation (Arch Linux)
+
+If installed via AUR:
+```bash
+sudo auto-cpufreq --update
+```
+
+Output:
+```
+Arch-based distribution with AUR support detected. 
+Please refresh auto-cpufreq using your AUR helper.
+```
+
+**Use your AUR helper to update:**
+```bash
+yay -Syu auto-cpufreq     # Using yay
+paru -Syu auto-cpufreq    # Using paru
+```
+
+### Standard Installation (Git/Manual)
+
+For standard installations, the update proceeds automatically.
+
+## Example Usage
+
+### Basic Update
+
+```bash
+sudo auto-cpufreq --update
+```
+
+### Update to Custom Directory
+
+By default, auto-cpufreq downloads to `/opt/auto-cpufreq/source`. You can specify a custom directory:
+
+```bash
+sudo auto-cpufreq --update=/home/user/auto-cpufreq-source
+```
+
+## Update Process (Standard Installation)
+
+1. **Check for updates**:
+   - Connects to GitHub API
+   - Compares current version with latest release
+   - Displays version information
+
+2. **User confirmation**:
+   ```
+   Do you want to update auto-cpufreq to the latest release? [Y/n]:
+   ```
+
+3. **Download and install**:
+   - Creates/cleans download directory
+   - Clones latest version from GitHub
+   - Removes existing daemon
+   - Installs new version
+   - Re-enables daemon
+
+4. **Completion**:
+   - Shows success message
+   - Displays new version number
+
+## Expected Output
+
+### Update Available
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Current version: 2.0.0
+Latest version: 2.1.0
+
+A new version is available!
+
+Do you want to update auto-cpufreq to the latest release? [Y/n]: y
+
+Removing daemon...
+Daemon removed successfully!
+
+Downloading latest version...
+Cloning into '/opt/auto-cpufreq/source/auto-cpufreq'...
+
+Installing auto-cpufreq...
+
+enabling daemon
+Daemon installed successfully!
+
+auto-cpufreq is installed with the latest version
+
+-------------------------------- auto-cpufreq ---------------------------------
+
+Version: 2.1.0
+
+-------------------------------------------------------------------------------
+```
+
+### No Update Available
+
+```
+You are already running the latest version (2.1.0)
+```
+
+### Update Cancelled
+
+```
+Do you want to update auto-cpufreq to the latest release? [Y/n]: n
+Aborted
+```
+
+## Notes
+
+- **Daemon preserved**: Configuration and settings are maintained
+- **Automatic restart**: Daemon is automatically restarted after update
+- **Config file**: Your `/etc/auto-cpufreq.conf` is preserved
+- **No downtime**: Update process is quick
+- **Safe to abort**: You can cancel at the confirmation prompt
+
+## Custom Download Directory
+
+The default download directory is `/opt/auto-cpufreq/source`. To use a different location:
+
+```bash
+sudo auto-cpufreq --update=/home/user/my-updates
+```
+
+This:
+- Creates the directory if it doesn't exist
+- Removes old auto-cpufreq directory if present
+- Downloads fresh copy to specified location
+- Installs from that location
+
+## Warnings
+
+### Network Required
+
+Update requires internet connection to:
+- Check GitHub for latest version
+- Download the latest release
+
+Without internet, the update will fail.
+
+### Daemon Interruption
+
+During update:
+- Daemon is stopped and removed
+- CPU optimizations pause briefly
+- Daemon is reinstalled and restarted
+
+Total downtime is typically under 30 seconds.
+
+## Troubleshooting
+
+### Update Fails
+
+If update fails:
+
+1. **Check internet connection**:
+   ```bash
+   ping github.com
+   ```
+
+2. **Verify Git is installed**:
+   ```bash
+   git --version
+   ```
+
+3. **Check permissions**:
+   ```bash
+   sudo ls -la /opt/auto-cpufreq/
+   ```
+
+4. **Manual update**:
+   ```bash
+   git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+   cd auto-cpufreq
+   sudo ./auto-cpufreq-installer
+   ```
+
+### Daemon Doesn't Restart
+
+If daemon fails to restart after update:
+
+```bash
+sudo auto-cpufreq --remove
+sudo auto-cpufreq --install
+```
+
+## Version Check
+
+To check your current version before updating:
+
+```bash
+auto-cpufreq --version
+```
+
+## Related Commands
+
+- [--version](/cli/version) - Check current version
+- [--install](/cli/install) - Install daemon
+- [--remove](/cli/remove) - Remove daemon
+- [--debug](/cli/debug) - Debug information
+
+## Best Practices
+
+1. **Check release notes** before updating:
+   - Visit: https://github.com/AdnanHodzic/auto-cpufreq/releases
+   - Review changelog and breaking changes
+
+2. **Backup configuration**:
+   ```bash
+   sudo cp /etc/auto-cpufreq.conf /etc/auto-cpufreq.conf.backup
+   ```
+
+3. **Test after update**:
+   ```bash
+   auto-cpufreq --stats
+   ```
+
+4. **Monitor logs**:
+   ```bash
+   sudo journalctl -u auto-cpufreq -f
+   ```

@@ -1,0 +1,291 @@
+---
+title: --version
+description: Display the currently installed auto-cpufreq version
+---
+
+The `--version` flag displays version information for your auto-cpufreq installation.
+
+## Syntax
+
+```bash
+auto-cpufreq --version
+```
+
+## Description
+
+The version command shows:
+- Current auto-cpufreq version number
+- Linux distribution information
+- System details
+
+This is useful for:
+- Verifying installation
+- Checking if updates are needed
+- Reporting bugs (include version in reports)
+- Confirming compatibility
+
+## Requirements
+
+- **No root required**: Can be run as normal user
+
+## Example Usage
+
+```bash
+auto-cpufreq --version
+```
+
+## Expected Output
+
+Typical version output:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Linux distro: Ubuntu 22.04 LTS
+Linux kernel: 5.15.0-58-generic
+
+----- auto-cpufreq version -----
+
+Version: 2.0.0
+
+-------------------------------------------------------------------------------
+```
+
+## Output Components
+
+### Distribution Information
+
+```
+Linux distro: Ubuntu 22.04 LTS
+Linux kernel: 5.15.0-58-generic
+```
+
+Shows:
+- Distribution name and version
+- Kernel version
+
+### Version Number
+
+```
+----- auto-cpufreq version -----
+
+Version: 2.0.0
+```
+
+Displays the installed auto-cpufreq version.
+
+## Use Cases
+
+### Check Current Version
+
+Before updating, check your current version:
+
+```bash
+auto-cpufreq --version
+```
+
+### Verify Installation
+
+Confirm auto-cpufreq is installed:
+
+```bash
+auto-cpufreq --version
+```
+
+If installed, you'll see version info. If not:
+```
+command not found: auto-cpufreq
+```
+
+### Bug Reports
+
+Include version when reporting bugs:
+
+```bash
+auto-cpufreq --version > version-info.txt
+```
+
+Attach to your GitHub issue.
+
+### Compare Versions
+
+Check if you're running the latest version:
+
+1. Check installed version:
+   ```bash
+   auto-cpufreq --version
+   ```
+
+2. Check latest release:
+   ```
+   https://github.com/AdnanHodzic/auto-cpufreq/releases/latest
+   ```
+
+3. Update if needed:
+   ```bash
+   sudo auto-cpufreq --update
+   ```
+
+## Version Format
+
+auto-cpufreq uses semantic versioning:
+
+```
+MAJOR.MINOR.PATCH
+```
+
+For example, version `2.0.0`:
+- **MAJOR**: 2 - Major version (breaking changes)
+- **MINOR**: 0 - Minor version (new features)
+- **PATCH**: 0 - Patch version (bug fixes)
+
+## Notes
+
+- **No root required**: Unlike most auto-cpufreq commands
+- **Quick execution**: Returns immediately
+- **No system changes**: Read-only command
+- **Works offline**: Doesn't require internet connection
+
+## Checking for Updates
+
+After checking your version, you can update:
+
+### Snap Installation
+
+```bash
+sudo snap refresh auto-cpufreq
+```
+
+### AUR Installation (Arch)
+
+```bash
+yay -Syu auto-cpufreq
+```
+
+### Standard Installation
+
+```bash
+sudo auto-cpufreq --update
+```
+
+## Version History
+
+To see all available versions and changelogs:
+
+```
+https://github.com/AdnanHodzic/auto-cpufreq/releases
+```
+
+## Scripting Usage
+
+Extract just the version number:
+
+```bash
+auto-cpufreq --version | grep "Version:" | awk '{print $2}'
+```
+
+Output:
+```
+2.0.0
+```
+
+## Comparison with --debug
+
+Both commands show version info:
+
+| Feature | --version | --debug |
+|---------|-----------|----------|
+| Shows version | ✅ Yes | ✅ Yes |
+| Shows distro | ✅ Yes | ✅ Yes |
+| Shows detailed system info | ❌ No | ✅ Yes |
+| Requires root | ❌ No | ✅ Yes |
+| Output length | Short | Comprehensive |
+
+Use `--version` for quick version check.
+Use `--debug` for full system diagnostics.
+
+## Related Commands
+
+- [--debug](/cli/debug) - Comprehensive debug information
+- [--update](/cli/update) - Update to latest version
+
+## Troubleshooting
+
+### Command Not Found
+
+```
+auto-cpufreq: command not found
+```
+
+**Solutions:**
+
+1. **Check if installed:**
+   ```bash
+   which auto-cpufreq
+   ```
+
+2. **Snap installation:**
+   ```bash
+   /snap/bin/auto-cpufreq --version
+   ```
+
+3. **Check PATH:**
+   ```bash
+   echo $PATH
+   ```
+
+4. **Reinstall if necessary:**
+   ```bash
+   sudo snap install auto-cpufreq  # For snap
+   ```
+
+### Version Seems Wrong
+
+If version doesn't match expected:
+
+1. **Check which binary is being used:**
+   ```bash
+   which auto-cpufreq
+   ```
+
+2. **Check for multiple installations:**
+   ```bash
+   find /usr -name auto-cpufreq 2>/dev/null
+   find /opt -name auto-cpufreq 2>/dev/null
+   ```
+
+3. **Snap vs system installation:**
+   ```bash
+   /snap/bin/auto-cpufreq --version     # Snap version
+   /usr/bin/auto-cpufreq --version      # System version
+   ```
+
+## Integration with Package Managers
+
+### Check Package Version (Before Installing)
+
+**Snap:**
+```bash
+snap info auto-cpufreq
+```
+
+**AUR:**
+```bash
+yay -Si auto-cpufreq
+```
+
+**APT (if packaged):**
+```bash
+apt-cache policy auto-cpufreq
+```
+
+## Development Versions
+
+If running from git:
+
+```bash
+cd /path/to/auto-cpufreq
+git describe --tags
+```
+
+This shows the exact commit and version.

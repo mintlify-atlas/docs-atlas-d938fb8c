@@ -1,0 +1,246 @@
+---
+title: --stats
+description: View live statistics from the auto-cpufreq daemon
+---
+
+The `--stats` flag displays real-time statistics and information about CPU optimizations being applied by the running daemon.
+
+## Syntax
+
+```bash
+auto-cpufreq --stats
+```
+
+## Description
+
+The stats view shows:
+- Current CPU frequencies for all cores
+- Active CPU governor settings
+- Battery status and charge level
+- Temperature readings
+- System load averages
+- Applied optimizations
+- Daemon activity and decisions
+
+This provides visibility into what the daemon is doing in the background.
+
+## Requirements
+
+- **Running daemon**: The daemon must be installed and running
+- **No root required**: Can be run as normal user (unlike --monitor)
+
+## Example Usage
+
+```bash
+auto-cpufreq --stats
+```
+
+## Expected Output
+
+The stats display shows real-time information such as:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Linux distro: Ubuntu 22.04 LTS
+Linux kernel: 5.15.0-58-generic
+Processor: Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz
+Cores: 8
+Architecture: x86_64
+
+----- CPU stats -----
+
+CPU frequency scaling driver: intel_pstate
+CPU frequency governor: powersave
+
+Core   Max speed   Min speed   Current speed
+0      4000 MHz    400 MHz     1200 MHz
+1      4000 MHz    400 MHz     1100 MHz
+2      4000 MHz    400 MHz     1300 MHz
+3      4000 MHz    400 MHz     1000 MHz
+4      4000 MHz    400 MHz     1150 MHz
+5      4000 MHz    400 MHz     1200 MHz
+6      4000 MHz    400 MHz     1100 MHz
+7      4000 MHz    400 MHz     1250 MHz
+
+----- Battery stats -----
+
+Battery state: discharging
+Battery charge: 67%
+Battery time remaining: 3h 45m
+
+----- Temperature -----
+
+Core 0: 45°C
+Core 1: 43°C
+Core 2: 46°C
+Core 3: 44°C
+
+----- Load average -----
+
+1 min: 0.52
+5 min: 0.67
+15 min: 0.73
+
+----- Governor settings -----
+
+Current governor: powersave
+Turbo boost: off
+
+-------------------------------------------------------------------------------
+```
+
+## Behavior
+
+### On Startup
+
+1. Checks if daemon is running
+2. Detects configuration file usage
+3. Checks for conflicts (GNOME Power Profiles, TLP)
+4. Prompts for confirmation if conflicts detected
+5. Starts displaying live statistics
+
+### During Display
+
+- Updates continuously in real-time
+- Shows dynamic changes as daemon makes adjustments
+- Reflects current system state
+- Can run indefinitely
+
+### Exiting
+
+Press `Ctrl+C` to exit the stats view.
+
+## Conflict Detection
+
+If conflicting services are detected, you'll see a warning:
+
+```
+WARNING: GNOME Power Profiles daemon is running
+This may conflict with auto-cpufreq
+
+press Enter to continue or Ctrl + c to exit...
+```
+
+Press Enter to continue viewing stats, or Ctrl+C to exit.
+
+## Use Cases
+
+### Monitoring Daemon Activity
+
+Watch what the daemon is doing in real-time:
+```bash
+auto-cpufreq --stats
+```
+
+Leave it running to observe:
+- Governor changes when switching between AC/battery
+- Frequency adjustments based on load
+- Battery drain rate
+- Temperature variations
+
+### Verifying Installation
+
+Confirm the daemon is working after installation:
+```bash
+auto-cpufreq --stats
+```
+
+Look for:
+- Active governor settings
+- Frequency scaling activity
+- No error messages
+
+### Troubleshooting Performance
+
+Check if daemon is optimizing correctly:
+```bash
+auto-cpufreq --stats
+```
+
+Verify:
+- Appropriate governor for power state (AC vs. battery)
+- CPU frequencies are scaling properly
+- Turbo boost behavior matches expectations
+
+### Battery Life Analysis
+
+Monitor battery stats while on battery power:
+```bash
+auto-cpufreq --stats
+```
+
+Observe:
+- Battery discharge rate
+- Power-saving governor is active
+- CPU frequencies are reduced appropriately
+
+## Notes
+
+- **No root required**: Unlike --monitor and --live
+- **Daemon must be running**: Shows error if daemon not installed
+- **Real-time updates**: Displays current state continuously
+- **Config file info**: Shows which config file is in use (if any)
+- **Safe to run**: Read-only view, no system changes
+
+## Error Messages
+
+### Daemon Not Running
+
+```
+ERROR: auto-cpufreq daemon is not running
+
+Run "sudo auto-cpufreq --install" to install daemon
+```
+
+**Solution:**
+```bash
+sudo auto-cpufreq --install
+```
+
+### Permission Issues
+
+If you see permission errors, the daemon may not have been installed correctly:
+```bash
+sudo systemctl status auto-cpufreq
+```
+
+## Comparison with Other Commands
+
+| Feature | --stats | --monitor | --live |
+|---------|---------|-----------|--------|
+| Shows current state | ✅ Yes | ✅ Yes | ✅ Yes |
+| Requires daemon | ✅ Yes | ❌ No | ❌ No |
+| Requires root | ❌ No | ✅ Yes | ✅ Yes |
+| Shows daemon activity | ✅ Yes | ❌ No | ✅ Yes |
+| Makes changes | ❌ No | ❌ No | ✅ Yes |
+
+## Related Commands
+
+- [--monitor](/cli/monitor) - Monitor without daemon
+- [--live](/cli/live) - Apply temporary optimizations
+- [--install](/cli/install) - Install daemon
+- [--debug](/cli/debug) - Detailed debug information
+
+## Viewing Logs
+
+For more detailed information, check daemon logs:
+
+**systemd:**
+```bash
+sudo journalctl -u auto-cpufreq -f
+```
+
+**snap:**
+```bash
+sudo snap logs auto-cpufreq -f
+```
+
+## Configuration Information
+
+If using a config file, stats will show:
+```
+Using settings defined in /etc/auto-cpufreq.conf file
+```
+
+This helps verify which configuration is active.

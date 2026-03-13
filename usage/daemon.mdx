@@ -1,0 +1,476 @@
+---
+title: "Daemon Mode"
+description: "Install auto-cpufreq as a system service for permanent, automatic CPU optimization"
+---
+
+Daemon mode runs auto-cpufreq as a background system service, providing continuous and automatic CPU optimization that persists across reboots.
+
+## Installation
+
+Install the auto-cpufreq daemon:
+
+```bash
+sudo auto-cpufreq --install
+```
+
+### What Happens During Installation
+
+The installation process:
+
+<Steps>
+  <Step title="Pre-installation Checks">
+    - Verifies the daemon is not already running
+    - Checks for available CPU governors
+    - Detects conflicting services (TLP, GNOME Power Profiles)
+  </Step>
+  <Step title="Script Deployment">
+    - Installs `cpufreqctl.auto-cpufreq` control script to `/usr/local/bin/`
+    - Deploys `auto-cpufreq-install` script
+    - Deploys `auto-cpufreq-remove` script
+  </Step>
+  <Step title="Service Configuration">
+    - Disables GNOME Power Profiles daemon (if detected)
+    - Disables tuned service (if detected)
+    - Creates stats file at `/var/run/auto-cpufreq.stats`
+    - Optionally disables Bluetooth on boot
+  </Step>
+  <Step title="systemd Service Setup">
+    - Creates and enables `auto-cpufreq.service`
+    - Starts the daemon immediately
+    - Configures automatic start on boot
+  </Step>
+</Steps>
+
+### Installation Output
+
+```bash
+$ sudo auto-cpufreq --install
+
+--------------------- Deploying auto-cpufreq as a daemon ----------------------
+
+* Deploy auto-cpufreq install script
+
+* Deploy auto-cpufreq remove script
+
+GNOME Power Profiles Daemon is running.
+auto-cpufreq will disable it to avoid conflicts.
+
+* Disabling GNOME Power Profiles daemon
+
+Created symlink /etc/systemd/system/auto-cpufreq.service → /usr/local/share/auto-cpufreq/auto-cpufreq.service
+
+----------------- auto-cpufreq daemon installed and running ------------------
+
+To view live stats, run:
+auto-cpufreq --stats
+
+auto-cpufreq makes all decisions automatically, if you would like to
+configure certain settings to your own liking, please refer to:
+https://github.com/AdnanHodzic/auto-cpufreq#configuring-auto-cpufreq
+
+To disable and remove auto-cpufreq daemon, run:
+sudo auto-cpufreq --remove
+
+-------------------------------------------------------------------------------
+```
+
+<Check>
+  The daemon is now running and will automatically start on every boot.
+</Check>
+
+## Managing the Daemon
+
+### Using systemctl
+
+Since auto-cpufreq runs as a systemd service, you can manage it with standard systemctl commands:
+
+#### Check Status
+
+```bash
+sudo systemctl status auto-cpufreq
+```
+
+Output:
+```text
+● auto-cpufreq.service - auto-cpufreq - Automatic CPU speed & power optimizer
+     Loaded: loaded (/usr/local/share/auto-cpufreq/auto-cpufreq.service; enabled; vendor preset: disabled)
+     Active: active (running) since Mon 2024-03-13 09:15:23 UTC; 2h 45min ago
+   Main PID: 1234 (python3)
+      Tasks: 3 (limit: 19123)
+     Memory: 15.2M
+        CPU: 1min 23s
+     CGroup: /system.slice/auto-cpufreq.service
+             └─1234 /usr/bin/python3 /usr/local/bin/auto-cpufreq --daemon
+```
+
+#### Stop the Daemon
+
+```bash
+sudo systemctl stop auto-cpufreq
+```
+
+<Warning>
+  Stopping the daemon stops CPU optimizations. Frequency scaling will revert to system defaults.
+</Warning>
+
+#### Start the Daemon
+
+```bash
+sudo systemctl start auto-cpufreq
+```
+
+#### Restart the Daemon
+
+Useful after configuration changes:
+
+```bash
+sudo systemctl restart auto-cpufreq
+```
+
+#### Disable Auto-Start
+
+Prevent the daemon from starting on boot (but keep it installed):
+
+```bash
+sudo systemctl disable auto-cpufreq
+```
+
+To re-enable:
+
+```bash
+sudo systemctl enable auto-cpufreq
+```
+
+### View Logs
+
+Check daemon logs using journalctl:
+
+```bash
+sudo journalctl -u auto-cpufreq -f
+```
+
+View recent logs:
+
+```bash
+sudo journalctl -u auto-cpufreq -n 100
+```
+
+View logs from current boot:
+
+```bash
+sudo journalctl -u auto-cpufreq -b
+```
+
+## Monitoring Daemon Activity
+
+Use the `--stats` flag to view live statistics:
+
+```bash
+auto-cpufreq --stats
+```
+
+See the [Stats page](/usage/stats) for detailed information.
+
+## Daemon Behavior
+
+### Optimization Cycle
+
+The daemon operates in a continuous loop:
+
+1. **Collect System Info**: Gathers CPU, temperature, and load data
+2. **Detect Power Source**: Checks if on battery or AC power
+3. **Apply Optimizations**: Sets appropriate governor and frequencies
+4. **Manage Turbo**: Enables/disables turbo boost based on load
+5. **Log Activity**: Writes to stats file
+6. **Wait**: Sleeps for 2 seconds
+7. **Repeat**: Goes back to step 1
+
+### Power Source Response
+
+<Tabs>
+  <Tab title="On AC Power">
+    When plugged into AC power:
+    
+    ```text
+    Battery is: charging
+    
+    ---------------------------- CPU frequency scaling ----------------------------
+    
+    Setting to use: "performance" governor
+    Setting to use: "performance" EPP
+    Setting to use: "balance_performance" EPB
+    
+    Total CPU usage: 35.2 %
+    Total system load: 1.87
+    Average temp. of all cores: 62.50 °C
+    
+    High CPU load (load average: 1.87, 1.65, 1.42)
+    Setting turbo boost: on
+    
+    -------------------------------------------------------------------------------
+    ```
+  </Tab>
+  <Tab title="On Battery">
+    When running on battery:
+    
+    ```text
+    Battery is: discharging
+    
+    ---------------------------- CPU frequency scaling ----------------------------
+    
+    Setting to use: "powersave" governor
+    Setting to use: "balance_power" EPP
+    Setting to use: "balance_power" EPB
+    
+    Total CPU usage: 18.7 %
+    Total system load: 0.65
+    Average temp. of all cores: 54.25 °C
+    
+    Load optimal (load average: 0.65, 0.72, 0.81)
+    Optimal total CPU usage: 18.7%, high average core temp: 54.2°C
+    Setting turbo boost: off
+    
+    -------------------------------------------------------------------------------
+    ```
+  </Tab>
+</Tabs>
+
+The daemon automatically switches profiles when you plug in or unplug your laptop.
+
+## Configuration File Integration
+
+The daemon automatically uses the configuration file if present:
+
+```bash
+# Default config locations (checked in order):
+# 1. /etc/auto-cpufreq.conf
+# 2. ~/.config/auto-cpufreq/auto-cpufreq.conf
+```
+
+If a config file exists, you'll see:
+
+```text
+Using settings defined in /etc/auto-cpufreq.conf file
+```
+
+After modifying the configuration, restart the daemon:
+
+```bash
+sudo systemctl restart auto-cpufreq
+```
+
+<Tip>
+  Test your configuration with `--live` mode before restarting the daemon to ensure it works as expected.
+</Tip>
+
+## Removing the Daemon
+
+Uninstall the auto-cpufreq daemon:
+
+```bash
+sudo auto-cpufreq --remove
+```
+
+### What Happens During Removal
+
+The removal process:
+
+<Steps>
+  <Step title="Service Cleanup">
+    - Stops the auto-cpufreq service
+    - Disables automatic start on boot
+    - Removes the systemd service file
+  </Step>
+  <Step title="Service Restoration">
+    - Re-enables GNOME Power Profiles daemon (if it was disabled)
+    - Re-enables tuned service (if it was disabled)
+    - Restores Bluetooth auto-start (if it was disabled)
+  </Step>
+  <Step title="File Cleanup">
+    - Removes cpufreqctl control script
+    - Removes install/remove scripts
+    - Deletes stats file
+    - Removes any override settings
+  </Step>
+</Steps>
+
+### Removal Output
+
+```bash
+$ sudo auto-cpufreq --remove
+
+--------------------- Removing auto-cpufreq daemon ---------------------------
+
+Removing auto-cpufreq service...
+Reloading systemd daemon...
+
+Re-enabling GNOME Power Profiles daemon...
+
+------------------------- auto-cpufreq daemon removed -------------------------
+
+auto-cpufreq successfully removed.
+
+-------------------------------------------------------------------------------
+```
+
+<Check>
+  Your system returns to its pre-installation state with all original services restored.
+</Check>
+
+## Snap Package Installation
+
+If you installed auto-cpufreq via Snap, the daemon commands work differently:
+
+### Install Daemon (Snap)
+
+```bash
+sudo auto-cpufreq --install
+```
+
+This sets the snap daemon state to "enabled" using snapctl.
+
+### Remove Daemon (Snap)
+
+```bash
+sudo auto-cpufreq --remove
+```
+
+This sets the snap daemon state to "disabled".
+
+### Snap-Specific Paths
+
+When using Snap:
+- Stats file: `/var/snap/auto-cpufreq/current/auto-cpufreq.stats`
+- Override state: `/var/snap/auto-cpufreq/current/override.pickle`
+- Turbo override: `/var/snap/auto-cpufreq/current/turbo-override.pickle`
+
+## GUI Installation (Alternative Method)
+
+If you prefer a graphical interface, you can install the daemon through the auto-cpufreq GUI:
+
+<Steps>
+  <Step title="Launch GUI">
+    Start the auto-cpufreq GUI application:
+    ```bash
+    auto-cpufreq-gtk
+    ```
+  </Step>
+  <Step title="Navigate to Settings">
+    Click on the "Settings" or "Daemon" tab in the GUI.
+  </Step>
+  <Step title="Install Daemon">
+    Click the "Install Daemon" button and provide your sudo password when prompted.
+  </Step>
+  <Step title="Verify Installation">
+    The GUI will show the daemon status as "Running" once installation completes.
+  </Step>
+</Steps>
+
+<Info>
+  The GUI provides the same functionality as the command-line installation, just with a visual interface.
+</Info>
+
+## Troubleshooting Daemon Issues
+
+### Daemon Won't Start
+
+Check for errors:
+
+```bash
+sudo systemctl status auto-cpufreq
+sudo journalctl -u auto-cpufreq -n 50
+```
+
+Common issues:
+- Conflicting services still running (TLP, laptop-mode-tools)
+- Missing CPU governors
+- Permission issues with stats file
+
+### Stats File Growing Too Large
+
+The daemon automatically truncates the stats file when it exceeds 10MB. If you want to manually clear it:
+
+```bash
+sudo systemctl stop auto-cpufreq
+sudo rm /var/run/auto-cpufreq.stats
+sudo systemctl start auto-cpufreq
+```
+
+### Daemon Not Responding to Power Changes
+
+Restart the daemon:
+
+```bash
+sudo systemctl restart auto-cpufreq
+```
+
+Check if power supply detection is working:
+
+```bash
+ls -la /sys/class/power_supply/
+```
+
+### Configuration Not Applied
+
+Verify the config file path:
+
+```bash
+auto-cpufreq --debug
+```
+
+Look for the line:
+```text
+Using settings defined in /etc/auto-cpufreq.conf file
+```
+
+If not shown, your config may be in the wrong location or have syntax errors.
+
+## Daemon vs. Other Modes
+
+| Feature | Daemon | Live | Monitor |
+|---------|--------|------|----------|
+| Background operation | ✅ Yes | ❌ No | ❌ No |
+| Auto-start on boot | ✅ Yes | ❌ No | ❌ No |
+| Persists across reboots | ✅ Yes | ❌ No | ❌ No |
+| Requires active terminal | ❌ No | ✅ Yes | ✅ Yes |
+| Shows live display | ❌ No | ✅ Yes | ✅ Yes |
+| Makes system changes | ✅ Yes | ✅ Yes | ❌ No |
+| Can run with other modes | ❌ No | ❌ No | ❌ No |
+| View activity with --stats | ✅ Yes | ❌ No | ❌ No |
+
+## Best Practices
+
+<Steps>
+  <Step title="Test Before Installing">
+    Always run `--monitor` and `--live` modes first to ensure auto-cpufreq works correctly with your hardware.
+  </Step>
+  <Step title="Create Configuration">
+    Set up a custom configuration file for your specific needs before installing the daemon.
+  </Step>
+  <Step title="Monitor Initial Behavior">
+    After installation, run `auto-cpufreq --stats` for 10-15 minutes to verify proper operation.
+  </Step>
+  <Step title="Check Logs Regularly">
+    Periodically review daemon logs to ensure no errors or warnings are occurring.
+  </Step>
+  <Step title="Update Configuration as Needed">
+    Adjust your configuration based on real-world usage and restart the daemon to apply changes.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View Stats" icon="chart-line" href="/usage/stats">
+    Monitor daemon activity in real-time
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/config-file">
+    Customize daemon behavior
+  </Card>
+  <Card title="Force Overrides" icon="power-off" href="/configuration/governor-override">
+    Override automatic behavior
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Resolve daemon issues
+  </Card>
+</CardGroup>

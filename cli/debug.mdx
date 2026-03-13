@@ -1,0 +1,439 @@
+---
+title: --debug
+description: Show detailed debug information for troubleshooting
+---
+
+The `--debug` flag displays comprehensive system and auto-cpufreq debug information, useful for troubleshooting issues and submitting bug reports.
+
+## Syntax
+
+```bash
+sudo auto-cpufreq --debug
+```
+
+## Description
+
+Debug mode displays:
+- Distribution and kernel information
+- Complete system hardware details
+- CPU frequency driver and governor information
+- Battery status and charging state
+- Battery charge thresholds (if supported)
+- Current CPU frequencies for all cores
+- Temperature readings
+- System load averages
+- Turbo boost status
+- auto-cpufreq version information
+- Python environment details
+- Application resource usage
+- Configuration file information (if used)
+
+This comprehensive output is essential for:
+- Diagnosing issues
+- Submitting bug reports
+- Verifying system compatibility
+- Understanding current system state
+
+## Requirements
+
+- **Root privileges**: Required to access all system information
+
+## Example Usage
+
+```bash
+sudo auto-cpufreq --debug
+```
+
+### Save Debug Output to File
+
+```bash
+sudo auto-cpufreq --debug > auto-cpufreq-debug.txt
+```
+
+### Debug with Custom Config
+
+```bash
+sudo auto-cpufreq --debug --config=/etc/auto-cpufreq.conf
+```
+
+## Expected Output
+
+Typical debug output includes:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Using settings defined in /etc/auto-cpufreq.conf file
+
+----- Battery charge thresholds -----
+
+Start threshold: 20%
+Stop threshold: 80%
+
+-------------------------------------------------------------------------------
+
+Linux distro: Ubuntu 22.04 LTS
+Linux kernel: 5.15.0-58-generic
+
+----- System information -----
+
+Processor: Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz
+Cores: 8
+Architecture: x86_64
+
+----- auto-cpufreq version -----
+
+Version: 2.0.0
+
+----- Python information -----
+
+Python: 3.10.6
+Path: /usr/bin/python3
+
+----- Device information -----
+
+Manufacturer: Dell Inc.
+Model: XPS 13 9370
+BIOS: 1.21.0
+
+Battery is: discharging
+
+----- Resource usage -----
+
+CPU usage: 15.3%
+Memory usage: 4.2 GB / 16.0 GB (26.3%)
+
+----- Load average -----
+
+1 min: 0.52
+5 min: 0.67  
+15 min: 0.73
+
+----- Current CPU governor -----
+
+governor: powersave
+
+----- CPU frequency scaling driver -----
+
+Driver: intel_pstate
+
+----- Current CPU frequencies -----
+
+Core 0: 1200 MHz
+Core 1: 1100 MHz
+Core 2: 1300 MHz
+Core 3: 1000 MHz
+Core 4: 1150 MHz
+Core 5: 1200 MHz
+Core 6: 1100 MHz
+Core 7: 1250 MHz
+
+----- Turbo boost -----
+
+Status: off
+Available: yes
+
+-------------------------------------------------------------------------------
+```
+
+## Information Sections
+
+### Configuration Info
+
+If using a config file:
+```
+Using settings defined in /path/to/config.conf file
+```
+
+### Battery Thresholds
+
+Shows charge threshold configuration (if supported):
+```
+----- Battery charge thresholds -----
+
+Start threshold: 20%
+Stop threshold: 80%
+```
+
+### Distribution Info
+
+```
+Linux distro: Ubuntu 22.04 LTS
+Linux kernel: 5.15.0-58-generic
+```
+
+### System Information
+
+```
+----- System information -----
+
+Processor: Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz
+Cores: 8
+Architecture: x86_64
+```
+
+### Version Information
+
+```
+----- auto-cpufreq version -----
+
+Version: 2.0.0
+```
+
+### Python Information
+
+```
+----- Python information -----
+
+Python: 3.10.6
+Path: /usr/bin/python3
+```
+
+### Device Information
+
+```
+----- Device information -----
+
+Manufacturer: Dell Inc.
+Model: XPS 13 9370
+BIOS: 1.21.0
+```
+
+### Battery Status
+
+```
+Battery is: discharging
+```
+
+Or:
+```
+Battery is: charging
+```
+
+### Resource Usage
+
+```
+----- Resource usage -----
+
+CPU usage: 15.3%
+Memory usage: 4.2 GB / 16.0 GB (26.3%)
+```
+
+### Load Average
+
+```
+----- Load average -----
+
+1 min: 0.52
+5 min: 0.67
+15 min: 0.73
+```
+
+### CPU Governor
+
+```
+----- Current CPU governor -----
+
+governor: powersave
+```
+
+### Turbo Boost Status
+
+```
+----- Turbo boost -----
+
+Status: off
+Available: yes
+```
+
+## Use Cases
+
+### Troubleshooting Issues
+
+When auto-cpufreq isn't working as expected:
+
+```bash
+sudo auto-cpufreq --debug > debug-output.txt
+```
+
+Review the output to identify:
+- Unsupported hardware
+- Driver issues
+- Configuration problems
+- System incompatibilities
+
+### Submitting Bug Reports
+
+When reporting bugs on GitHub:
+
+```bash
+sudo auto-cpufreq --debug > debug-$(date +%Y%m%d).txt
+```
+
+Attach this file to your bug report at:
+https://github.com/AdnanHodzic/auto-cpufreq/issues
+
+### Verifying Installation
+
+Confirm auto-cpufreq is properly installed and configured:
+
+```bash
+sudo auto-cpufreq --debug
+```
+
+Check:
+- Version is correct
+- CPU driver is supported
+- Battery is detected (if laptop)
+- Turbo boost is available (if applicable)
+
+### Comparing Before/After Changes
+
+Capture state before making changes:
+
+```bash
+sudo auto-cpufreq --debug > before.txt
+# Make changes
+sudo auto-cpufreq --debug > after.txt
+diff before.txt after.txt
+```
+
+### System Documentation
+
+Document your system configuration:
+
+```bash
+sudo auto-cpufreq --debug > system-config-$(hostname)-$(date +%Y%m%d).txt
+```
+
+## Notes
+
+- **Root required**: Some information requires root privileges
+- **Static snapshot**: Debug output is a one-time snapshot, not continuous
+- **Include in bug reports**: Always include debug output when reporting issues
+- **No modifications**: Debug mode doesn't change any settings
+- **Quick execution**: Completes in under a second
+
+## Analyzing Debug Output
+
+### Check CPU Driver
+
+Look for:
+```
+Driver: intel_pstate
+```
+
+Or:
+```
+Driver: acpi-cpufreq
+```
+
+Both are supported. If showing something else, there may be compatibility issues.
+
+### Check Governor Support
+
+Cross-reference with available governors:
+```bash
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+```
+
+### Check Battery Detection
+
+Look for:
+```
+Battery is: charging
+```
+
+Or:
+```
+Battery is: discharging
+```
+
+If battery isn't detected on a laptop, there may be a driver issue.
+
+### Check Turbo Support
+
+Look for:
+```
+----- Turbo boost -----
+
+Status: off
+Available: yes
+```
+
+- **Available: yes** - Turbo boost is supported
+- **Available: no** - CPU doesn't support turbo boost
+
+## Related Commands
+
+- [--version](/cli/version) - Show version only
+- [--monitor](/cli/monitor) - Monitor system in real-time
+- [--stats](/cli/stats) - View daemon statistics
+
+## Bug Report Template
+
+When submitting a bug report, include:
+
+1. **Description of the issue**
+2. **Steps to reproduce**
+3. **Expected behavior**
+4. **Actual behavior**
+5. **Debug output:**
+   ```bash
+   sudo auto-cpufreq --debug
+   ```
+6. **Installation method** (snap, AUR, git, etc.)
+7. **Daemon status:**
+   ```bash
+   sudo systemctl status auto-cpufreq
+   ```
+
+## Troubleshooting
+
+### Incomplete Debug Output
+
+If debug output seems incomplete:
+
+1. **Ensure root privileges:**
+   ```bash
+   sudo auto-cpufreq --debug
+   ```
+
+2. **Check for errors:**
+   ```bash
+   sudo auto-cpufreq --debug 2>&1 | tee debug-with-errors.txt
+   ```
+
+### Permission Denied
+
+```
+ERROR: Root privileges required for debug information
+```
+
+**Solution:**
+```bash
+sudo auto-cpufreq --debug
+```
+
+### Missing Information
+
+If certain sections are missing:
+- **Battery info**: Normal for desktop systems
+- **Turbo boost**: Normal for CPUs without turbo
+- **Thresholds**: Normal for systems without threshold support
+
+## Privacy Considerations
+
+Debug output includes:
+- System manufacturer and model
+- Hardware specifications
+- Operating system version
+- Installed software versions
+
+**Does NOT include:**
+- Personal files
+- Passwords or credentials  
+- Network information
+- Running processes (beyond auto-cpufreq)
+
+It's safe to share debug output publicly when reporting bugs.

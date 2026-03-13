@@ -1,0 +1,312 @@
+---
+title: Governor Override
+description: Force specific CPU governors using the --force flag
+---
+
+The `--force` flag allows you to override auto-cpufreq's automatic governor management and force a specific CPU governor regardless of power state or configuration.
+
+## Overview
+
+By default, auto-cpufreq automatically switches between governors based on:
+- Whether you're on AC power or battery
+- Settings in your configuration file
+- System load and conditions
+
+The governor override feature bypasses this automatic behavior and locks the governor to your choice.
+
+<Warning>
+  Using `--force` overrides all automatic governor management. This can impact battery life or performance depending on your choice.
+</Warning>
+
+## Usage
+
+### Force Performance Governor
+
+Lock all CPUs to the performance governor for maximum performance:
+
+```bash
+sudo auto-cpufreq --force=performance
+```
+
+**Use cases:**
+- Gaming sessions
+- Rendering or compilation tasks
+- Benchmarking
+- When plugged in and maximum performance is needed
+
+<Info>
+  The performance governor runs CPUs at maximum frequency continuously, which increases power consumption and heat generation.
+</Info>
+
+### Force Powersave Governor
+
+Lock all CPUs to the powersave governor for maximum battery life:
+
+```bash
+sudo auto-cpufreq --force=powersave
+```
+
+**Use cases:**
+- Extending battery life
+- Reducing heat and fan noise
+- Light workloads (browsing, documents)
+- When thermal management is a priority
+
+<Info>
+  The powersave governor limits CPU frequency to lower levels, which may reduce responsiveness for demanding applications.
+</Info>
+
+### Reset to Automatic Mode
+
+Remove the governor override and return to automatic management:
+
+```bash
+sudo auto-cpufreq --force=reset
+```
+
+This restores auto-cpufreq's normal behavior, using configuration file settings or automatic detection.
+
+## Persistence
+
+Governor overrides persist across reboots and daemon restarts.
+
+```bash
+# Set override
+sudo auto-cpufreq --force=performance
+
+# Reboot system
+sudo reboot
+
+# Override remains active
+# auto-cpufreq will continue using performance governor
+```
+
+The override state is stored in: `/var/run/auto-cpufreq.governor_override.pickle`
+
+<Tip>
+  To temporarily test a governor without persistence, use [Live Mode](/usage/live) instead.
+</Tip>
+
+## Checking Current Override Status
+
+You can check if a governor override is active:
+
+```bash
+sudo auto-cpufreq --get-state
+```
+
+**Possible outputs:**
+- `default` - No override active (automatic mode)
+- `powersave` - Powersave override active
+- `performance` - Performance override active
+
+## Override vs Configuration File
+
+The `--force` flag takes precedence over configuration file settings:
+
+```ini
+# In /etc/auto-cpufreq.conf
+[battery]
+governor = powersave
+```
+
+```bash
+# Even on battery, performance governor will be used
+sudo auto-cpufreq --force=performance
+```
+
+When an override is active, you'll see a warning in the output:
+
+```
+Warning: governor overwritten using `--force` flag.
+```
+
+## Daemon Requirement
+
+<Warning>
+  Governor override requires the auto-cpufreq daemon to be installed and running.
+</Warning>
+
+Check daemon status:
+
+```bash
+sudo systemctl status auto-cpufreq
+```
+
+If the daemon is not installed:
+
+```bash
+sudo auto-cpufreq --install
+```
+
+## Examples
+
+### Gaming Session Workflow
+
+```bash
+# Before gaming: Force performance mode
+sudo auto-cpufreq --force=performance
+
+# Play games with maximum performance
+# ...
+
+# After gaming: Reset to automatic
+sudo auto-cpufreq --force=reset
+```
+
+### Battery Conservation
+
+```bash
+# Force powersave when battery is critical
+sudo auto-cpufreq --force=powersave
+
+# Check remaining battery time
+upower -i /org/freedesktop/UPower/devices/battery_BAT0
+
+# Reset when plugged in
+sudo auto-cpufreq --force=reset
+```
+
+### Thermal Management
+
+```bash
+# Force powersave to reduce temperature
+sudo auto-cpufreq --force=powersave
+
+# Monitor temperatures
+watch -n 1 sensors
+
+# Reset when temperatures are acceptable
+sudo auto-cpufreq --force=reset
+```
+
+## Available Governors
+
+The available governors depend on your CPU and kernel:
+
+<CodeGroup>
+```bash Check Available Governors
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+```
+
+```bash Example Output
+powersave performance schedutil
+```
+</CodeGroup>
+
+**Common governors:**
+
+<AccordionGroup>
+  <Accordion title="performance">
+    Runs CPU at maximum frequency at all times.
+    
+    **Pros:** Maximum performance, lowest latency
+    
+    **Cons:** High power consumption, increased heat
+  </Accordion>
+  
+  <Accordion title="powersave">
+    Runs CPU at minimum frequency (with intel_pstate, it scales dynamically).
+    
+    **Pros:** Low power consumption, reduced heat
+    
+    **Cons:** May reduce responsiveness for demanding tasks
+  </Accordion>
+  
+  <Accordion title="schedutil">
+    Uses CPU scheduler information to scale frequency dynamically.
+    
+    **Pros:** Good balance, modern approach
+    
+    **Cons:** Not available on all systems
+  </Accordion>
+  
+  <Accordion title="ondemand">
+    Dynamically scales frequency based on CPU load.
+    
+    **Pros:** Good balance of performance and efficiency
+    
+    **Cons:** May have higher latency than performance
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  Only `powersave` and `performance` can be forced with the `--force` flag. Other governors can be set via the [configuration file](/configuration/config-file).
+</Info>
+
+## Combining with Other Options
+
+You can combine `--force` with other flags:
+
+```bash
+# Force performance and view stats
+sudo auto-cpufreq --force=performance
+sudo auto-cpufreq --stats
+
+# Force powersave and monitor
+sudo auto-cpufreq --force=powersave
+sudo auto-cpufreq --monitor
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Override doesn't persist after reboot">
+    Ensure the auto-cpufreq daemon is installed and enabled:
+    ```bash
+    sudo systemctl status auto-cpufreq
+    sudo auto-cpufreq --install
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: daemon not running">
+    The `--force` flag requires the daemon to be running:
+    ```bash
+    sudo auto-cpufreq --install
+    ```
+    
+    For temporary changes without daemon, use `--live` mode instead.
+  </Accordion>
+  
+  <Accordion title="Governor changes back automatically">
+    Check if another power management tool is interfering:
+    ```bash
+    # Check for conflicting services
+    systemctl status power-profiles-daemon
+    systemctl status tlp
+    ```
+    
+    See [Power Profiles](/configuration/power-profiles) for resolution.
+  </Accordion>
+  
+  <Accordion title="Invalid option error">
+    Ensure you're using correct syntax:
+    ```bash
+    # Correct
+    sudo auto-cpufreq --force=performance
+    
+    # Incorrect
+    sudo auto-cpufreq --force performance
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Topics
+
+<CardGroup cols={2}>
+  <Card title="Configuration File" href="/configuration/config-file">
+    Set permanent governor preferences per power state
+  </Card>
+  
+  <Card title="Turbo Mode" href="/configuration/turbo-mode">
+    Override CPU turbo boost behavior
+  </Card>
+  
+  <Card title="Stats Mode" href="/usage/stats">
+    View current governor and frequency information
+  </Card>
+  
+  <Card title="Live Mode" href="/usage/live">
+    Test settings temporarily without daemon
+  </Card>
+</CardGroup>

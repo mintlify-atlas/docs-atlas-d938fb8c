@@ -1,0 +1,327 @@
+---
+title: Snap Installation
+description: Install auto-cpufreq via the Snap Store
+---
+
+## Overview
+
+auto-cpufreq is available on the [Snap Store](https://snapcraft.io/auto-cpufreq), providing an easy installation method across many Linux distributions.
+
+<Warning>
+  While all auto-cpufreq CLI functionality works as intended, **the GUI is not available on Snap package installs** due to Snap package confinement limitations. Consider using the [auto-cpufreq-installer](/installation) for full GUI support.
+</Warning>
+
+## Installation
+
+Install auto-cpufreq from the Snap Store:
+
+```bash
+sudo snap install auto-cpufreq
+```
+
+## Prerequisites
+
+<AccordionGroup>
+  <Accordion title="snapd Installation">
+    Make sure snapd is installed on your system. Most modern Linux distributions include it by default.
+    
+    <CodeGroup>
+    ```bash Ubuntu/Debian
+    sudo apt update
+    sudo apt install snapd
+    ```
+    
+    ```bash Fedora
+    sudo dnf install snapd
+    sudo ln -s /var/lib/snapd/snap /snap
+    ```
+    
+    ```bash Arch Linux
+    yay -S snapd
+    sudo systemctl enable --now snapd.socket
+    sudo ln -s /var/lib/snapd/snap /snap
+    ```
+    
+    ```bash openSUSE
+    sudo zypper addrepo --refresh https://download.opensuse.org/repositories/system:/snappy/openSUSE_Leap_15.2 snappy
+    sudo zypper --gpg-auto-import-keys refresh
+    sudo zypper dup --from snappy
+    sudo zypper install snapd
+    ```
+    </CodeGroup>
+  </Accordion>
+  
+  <Accordion title="Version Requirements">
+    Ensure `snap version` is >= 2.44 for auto-cpufreq to fully work due to recent snapd changes.
+    
+    ```bash
+    snap version
+    ```
+    
+    If your version is older, update snapd:
+    
+    ```bash
+    sudo snap refresh snapd
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Post-Installation Setup
+
+After installation, enable and start the daemon:
+
+```bash
+sudo snap run auto-cpufreq
+```
+
+Then install the daemon:
+
+```bash
+sudo auto-cpufreq --install
+```
+
+### Verify Installation
+
+Check the daemon status:
+
+```bash
+systemctl status snap.auto-cpufreq.service.service
+```
+
+View live statistics:
+
+```bash
+auto-cpufreq --stats
+```
+
+## GUI Limitations
+
+<Warning>
+  The GUI (auto-cpufreq-gtk) is **not available** in Snap installs due to Snap confinement limitations. All CLI functionality works normally.
+</Warning>
+
+### What's Not Available
+
+- Desktop entry (application icon)
+- auto-cpufreq-gtk GUI interface
+- Visual configuration tools
+
+### What Works
+
+All CLI commands work perfectly:
+- `--monitor`, `--live`, `--stats`
+- `--install`, `--remove`
+- Configuration via `/etc/auto-cpufreq.conf`
+- All governor and turbo overrides
+
+<Info>
+  If you need GUI support, consider installing via [auto-cpufreq-installer](/installation) instead.
+</Info>
+
+## Configuration
+
+Due to Snap confinement, some configuration tasks require the power_helper script.
+
+### Using power_helper Script
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+    cd auto-cpufreq
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    # Debian/Ubuntu
+    sudo apt install python3-psutil python3-pyinotify
+    
+    # Or using pip
+    sudo pip3 install psutil pyinotify --break-system-packages
+    ```
+  </Step>
+  
+  <Step title="Run power_helper">
+    ```bash
+    # Disable GNOME Power Profiles daemon
+    sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+    
+    # Disable Bluetooth on boot
+    sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+    
+    # Enable Bluetooth on boot
+    sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_on
+    ```
+  </Step>
+  
+  <Step title="View All Options">
+    ```bash
+    sudo python3 -m auto_cpufreq.power_helper --help
+    ```
+  </Step>
+</Steps>
+
+### Configuration File
+
+You can still use the configuration file at `/etc/auto-cpufreq.conf`:
+
+```bash
+sudo nano /etc/auto-cpufreq.conf
+```
+
+See the [Configuration Guide](/configuration/config-file) for details.
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Fedora: cgroups v2 Error">
+    Fedora users may encounter an error due to cgroups v2 being in development. Run auto-cpufreq with:
+    
+    ```bash
+    sudo snap run auto-cpufreq
+    ```
+    
+    Alternatively, use the [auto-cpufreq-installer](/installation) which doesn't have this issue.
+  </Accordion>
+  
+  <Accordion title="GNOME Power Profiles Daemon">
+    The Snap package cannot automatically disable GNOME Power Profiles daemon. You must use the power_helper script:
+    
+    ```bash
+    git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+    cd auto-cpufreq
+    sudo pip3 install psutil pyinotify --break-system-packages
+    sudo python3 -m auto_cpufreq.power_helper --gnome_power_disable
+    ```
+  </Accordion>
+  
+  <Accordion title="Bluetooth Management">
+    The `--bluetooth_boot_off` and `--bluetooth_boot_on` flags don't work directly with Snap. Use power_helper:
+    
+    ```bash
+    sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_off
+    sudo python3 -m auto_cpufreq.power_helper --bluetooth_boot_on
+    ```
+  </Accordion>
+  
+  <Accordion title="Stats File Location">
+    For Snap installs, the stats file is located at:
+    
+    ```bash
+    /var/snap/auto-cpufreq/current/auto-cpufreq.stats
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Managing the Daemon
+
+<CodeGroup>
+```bash Check Status
+systemctl status snap.auto-cpufreq.service.service
+```
+
+```bash View Logs
+journalctl -u snap.auto-cpufreq.service.service -f
+```
+
+```bash Install Daemon
+sudo auto-cpufreq --install
+```
+
+```bash Remove Daemon
+sudo auto-cpufreq --remove
+```
+</CodeGroup>
+
+## Updating
+
+Update auto-cpufreq using the snap package manager:
+
+```bash
+sudo snap refresh auto-cpufreq
+```
+
+Check for available updates:
+
+```bash
+snap info auto-cpufreq
+```
+
+<Note>
+  The `auto-cpufreq --update` command does not work with Snap installs. Always use `snap refresh`.
+</Note>
+
+## Removal
+
+To completely remove auto-cpufreq:
+
+<Steps>
+  <Step title="Remove the Daemon">
+    ```bash
+    sudo auto-cpufreq --remove
+    ```
+  </Step>
+  
+  <Step title="Uninstall the Snap Package">
+    ```bash
+    sudo snap remove auto-cpufreq
+    ```
+  </Step>
+  
+  <Step title="Re-enable GNOME Power Profiles (if applicable)">
+    ```bash
+    git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+    cd auto-cpufreq
+    sudo python3 -m auto_cpufreq.power_helper --gnome_power_enable
+    ```
+  </Step>
+</Steps>
+
+## Alternative Installation Methods
+
+If Snap limitations are problematic, consider these alternatives:
+
+<CardGroup cols={2}>
+  <Card title="auto-cpufreq-installer" icon="download" href="/installation">
+    Full-featured installation with GUI support
+  </Card>
+  
+  <Card title="AUR (Arch Linux)" icon="linux" href="/guides/aur-installation">
+    Native package for Arch-based distributions
+  </Card>
+  
+  <Card title="NixOS" icon="snowflake" href="/guides/nixos-installation">
+    Declarative configuration for NixOS users
+  </Card>
+</CardGroup>
+
+## Advantages of Snap Installation
+
+<CardGroup cols={2}>
+  <Card title="Easy Installation" icon="rocket">
+    Single command installation across multiple distributions
+  </Card>
+  
+  <Card title="Automatic Updates" icon="arrows-rotate">
+    Updates are handled automatically by snapd
+  </Card>
+  
+  <Card title="Sandboxed" icon="shield">
+    Runs in a confined environment for added security
+  </Card>
+  
+  <Card title="Cross-Distro" icon="circle-nodes">
+    Works on Ubuntu, Fedora, Arch, openSUSE, and more
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+For Snap-specific issues:
+
+1. Check the [Snap Store page](https://snapcraft.io/auto-cpufreq)
+2. Review the [power_helper documentation](https://github.com/AdnanHodzic/auto-cpufreq#1-power_helperpy-script-snap-package-install-only)
+3. Try the [auto-cpufreq-genAI-chatbot](https://foolcontrol.org/?p=4903)
+4. [Open an issue](https://github.com/AdnanHodzic/auto-cpufreq/issues) on GitHub
+5. Join the [Discord server](https://discord.gg/Sjauxtj6kH)

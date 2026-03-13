@@ -1,0 +1,127 @@
+---
+title: CLI Overview
+description: Complete reference for auto-cpufreq command-line interface
+---
+
+auto-cpufreq is a command-line tool that provides automatic CPU speed and power optimization for Linux systems.
+
+## Quick Start
+
+Run auto-cpufreq without any arguments to see the help message:
+
+```bash
+auto-cpufreq
+```
+
+## Available Commands
+
+auto-cpufreq supports the following command-line options:
+
+### Monitoring & Optimization
+
+- [--monitor](/cli/monitor) - Monitor and see suggestions for CPU optimizations
+- [--live](/cli/live) - Monitor and make temporary CPU optimizations
+- [--stats](/cli/stats) - View live stats of CPU optimizations made by daemon
+
+### Daemon Management
+
+- [--install](/cli/install) - Install daemon for permanent automatic CPU optimizations
+- [--remove](/cli/remove) - Remove daemon and stop automatic CPU optimizations
+- [--update](/cli/update) - Update daemon and package to the latest version
+
+### Manual Control
+
+- [--force](/cli/force) - Force use of specific CPU governor (powersave/performance)
+- [--turbo](/cli/turbo) - Control CPU turbo mode behavior
+- [--config](/cli/config) - Use custom configuration file
+
+### Additional Features
+
+- [--bluetooth](/cli/bluetooth) - Control Bluetooth boot behavior
+- [--debug](/cli/debug) - Show debug information for troubleshooting
+- [--version](/cli/version) - Show currently installed version
+
+## Help Output
+
+The complete help output from `auto-cpufreq --help`:
+
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Automatic CPU speed & power optimizer for Linux
+
+Example usage:
+auto-cpufreq --monitor
+
+-----
+
+Options:
+  --monitor              Monitor and see suggestions for CPU optimizations
+  --live                 Monitor and make (temp.) suggested CPU optimizations
+  --install              Install daemon for (permanent) automatic CPU
+                         optimizations
+  --update               Update daemon and package for (permanent) automatic
+                         CPU optimizations
+  --remove               Remove daemon for (permanent) automatic CPU
+                         optimizations
+  --force TEXT           Force use of either "powersave" or "performance"
+                         governors. Setting to "reset" will go back to normal
+                         mode
+  --turbo TEXT           Force use of CPU turbo mode, if supported, with
+                         "never" or "always". Setting to "auto" automatically
+                         handles turbo mode
+  --config TEXT          Use config file at defined path
+  --stats                View live stats of CPU optimizations made by daemon
+  --bluetooth_boot_off   Turn off Bluetooth on boot
+  --bluetooth_boot_on    Turn on Bluetooth on boot
+  --debug                Show debug info (include when submitting bugs)
+  --version              Show currently installed version
+  --donate               Support the project
+  --help                 Show this message and exit.
+```
+
+## Common Usage Patterns
+
+### First-time Setup
+
+1. Monitor your system to see what optimizations would be applied:
+   ```bash
+   sudo auto-cpufreq --monitor
+   ```
+
+2. Test live optimizations temporarily:
+   ```bash
+   sudo auto-cpufreq --live
+   ```
+
+3. Install the daemon for permanent optimizations:
+   ```bash
+   sudo auto-cpufreq --install
+   ```
+
+### Monitoring and Stats
+
+Check current optimization statistics:
+```bash
+auto-cpufreq --stats
+```
+
+### Troubleshooting
+
+Generate debug information for bug reports:
+```bash
+sudo auto-cpufreq --debug
+```
+
+## Root Privileges
+
+Most auto-cpufreq commands require root privileges (sudo) because they need to:
+- Read system power and frequency information
+- Modify CPU governor settings
+- Install or manage system services
+- Configure hardware settings
+
+Commands that don't require root:
+- `--version`
+- `--help`
+- `--donate`

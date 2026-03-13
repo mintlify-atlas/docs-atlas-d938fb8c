@@ -1,0 +1,203 @@
+---
+title: "How auto-cpufreq Works"
+description: "Deep dive into the core algorithm and decision-making process"
+---
+
+## Overview
+
+auto-cpufreq automatically optimizes CPU performance and power consumption by monitoring system state and making intelligent decisions about CPU frequency scaling, governors, and turbo boost.
+
+## Core Algorithm
+
+The heart of auto-cpufreq is the `set_autofreq()` function in `core.py`, which runs continuously in daemon mode to monitor and adjust CPU settings.
+
+### Load Thresholds
+
+auto-cpufreq uses dynamic load thresholds based on the number of CPU cores:
+
+```python
+# From auto_cpufreq/core.py
+CPUS = os.cpu_count()
+
+# powersave/performance system load thresholds
+performance_load_threshold = (50 * CPUS) / 100
+powersave_load_threshold = (75 * CPUS) / 100
+```
+
+- **Performance threshold**: 50% of total CPU cores (e.g., 4.0 on an 8-core system)
+- **Powersave threshold**: 75% of total CPU cores (e.g., 6.0 on an 8-core system)
+
+These thresholds scale with your CPU count, ensuring appropriate behavior on systems with varying core counts.
+
+## Decision-Making Process
+
+### Battery vs AC Power
+
+The primary decision factor is power source:
+
+<Tabs>
+  <Tab title="On Battery">
+    When running on battery power, auto-cpufreq prioritizes power savings:
+    
+    - **Governor**: Switches to `powersave` governor
+    - **Turbo Boost**: Disabled by default (unless overridden)
+    - **Frequency Scaling**: Uses lower frequency ranges
+    - **Energy Performance Preference (EPP)**: Set to `power` or `balance_power`
+    
+    The goal is to maximize battery life while maintaining acceptable performance.
+  </Tab>
+  
+  <Tab title="On AC Power">
+    When plugged into AC power, auto-cpufreq enables high performance:
+    
+    - **Governor**: Switches to `performance` governor
+    - **Turbo Boost**: Enabled by default (unless overridden)
+    - **Frequency Scaling**: Allows maximum frequencies
+    - **Energy Performance Preference (EPP)**: Set to `performance`
+    
+    The goal is to maximize performance without worrying about power consumption.
+  </Tab>
+</Tabs>
+
+### System Load Monitoring
+
+Even within battery/AC modes, auto-cpufreq adjusts behavior based on system load:
+
+```python
+# Simplified logic from set_autofreq()
+load1m = psutil.getloadavg()[0]
+
+if charging():
+    # On AC power
+    if load1m > performance_load_threshold:
+        set_performance()
+    else:
+        # Light load - can use balanced settings
+        set_balanced()
+else:
+    # On battery
+    if load1m < powersave_load_threshold:
+        set_powersave()
+    else:
+        # Heavy load - allow higher performance
+        set_balanced()
+```
+
+### Temperature Monitoring
+
+auto-cpufreq also monitors CPU temperature to prevent overheating:
+
+- If CPU temperature exceeds safe thresholds, turbo boost may be disabled
+- Frequency limits can be adjusted to reduce heat generation
+- This works in conjunction with system load to make thermal-aware decisions
+
+## Integration with Linux Kernel
+
+auto-cpufreq leverages the Linux kernel's CPU frequency scaling infrastructure:
+
+### CPUfreq Subsystem
+
+The kernel provides the CPUfreq subsystem with:
+
+- **Governors**: Policy modules that decide target frequencies
+- **Drivers**: Hardware-specific frequency scaling (intel_pstate, acpi-cpufreq, amd-pstate)
+- **Scaling**: Interfaces to read/write frequency limits
+
+auto-cpufreq writes to sysfs interfaces:
+
+```bash
+# Example sysfs paths
+/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+/sys/devices/system/cpu/cpu*/cpufreq/scaling_min_freq
+/sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
+/sys/devices/system/cpu/intel_pstate/no_turbo
+```
+
+### Governor Selection
+
+The kernel provides several governors:
+
+- `performance`: Always run at maximum frequency
+- `powersave`: Always run at minimum frequency
+- `schedutil`: Dynamic frequency based on scheduler utilization
+- `ondemand`: Legacy dynamic scaling
+- `conservative`: Gradual frequency changes
+
+auto-cpufreq primarily uses `performance` and `powersave`, letting the kernel handle the details of frequency transitions.
+
+## Monitoring Loop
+
+In daemon mode, auto-cpufreq runs a continuous monitoring loop:
+
+<Steps>
+  <Step title="Collect System Data">
+    - CPU load (1-minute average)
+    - CPU temperature (per-core and average)
+    - Battery state (charging/discharging)
+    - Current governor and frequency
+  </Step>
+  
+  <Step title="Apply Decision Logic">
+    - Determine optimal governor based on power source and load
+    - Decide turbo boost state
+    - Calculate frequency limits if configured
+    - Check temperature constraints
+  </Step>
+  
+  <Step title="Apply Changes">
+    - Write to sysfs to change governor (if different from current)
+    - Enable/disable turbo boost
+    - Set frequency scaling limits
+    - Apply EPP/EPB settings
+  </Step>
+  
+  <Step title="Write Stats">
+    - Log current state to stats file
+    - Update GUI if running
+    - Sleep for interval (typically 1 second)
+  </Step>
+</Steps>
+
+This loop ensures auto-cpufreq responds quickly to changes in system state while minimizing overhead.
+
+## Configuration File Override
+
+When a configuration file is present, it takes precedence over automatic decisions:
+
+```ini
+[charger]
+governor = performance
+turbo = auto
+
+[battery]
+governor = powersave  
+turbo = never
+```
+
+The config file allows you to:
+- Override automatic governor selection
+- Force turbo boost behavior
+- Set custom frequency limits
+- Configure EPP/EPB values
+
+See [Configuration](/configuration/config-file) for full details.
+
+## Why It Works
+
+The key insight behind auto-cpufreq is that most CPU frequency management tools either:
+
+1. Require manual intervention (switching profiles when plugging/unplugging)
+2. Use static profiles that don't adapt to actual workload
+3. Make overly conservative or aggressive decisions
+
+auto-cpufreq solves this by:
+
+- **Automatic power source detection**: No manual switching needed
+- **Load-aware decisions**: Adapts to actual CPU usage in real-time
+- **Temperature awareness**: Prevents thermal issues
+- **Sensible defaults**: Works well out-of-the-box for most users
+- **Configurable**: Power users can fine-tune behavior
+
+<Note>
+  auto-cpufreq is designed to replace tools like TLP for CPU frequency management. The two should not be used together for the same functionality.
+</Note>

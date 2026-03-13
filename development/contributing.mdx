@@ -1,0 +1,389 @@
+---
+title: "Contributing"
+description: "How to contribute to the auto-cpufreq project"
+---
+
+## Welcome Contributors!
+
+auto-cpufreq is an open-source project that welcomes contributions from developers of all skill levels. Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated!
+
+<Note>
+  auto-cpufreq is actively looking for co-maintainers and open source developers to help shape the future of the project. See the [GitHub discussion](https://github.com/AdnanHodzic/auto-cpufreq/discussions/312) for more details.
+</Note>
+
+## Getting Started
+
+### Join the Community
+
+Before contributing, consider joining the community:
+
+<CardGroup cols={2}>
+  <Card title="Discord Server" icon="discord" href="https://discord.gg/Sjauxtj6kH">
+    Discuss development, ask questions, and connect with other contributors
+  </Card>
+  <Card title="GitHub Discussions" icon="github" href="https://github.com/AdnanHodzic/auto-cpufreq/discussions">
+    Long-form discussions about features and project direction
+  </Card>
+  <Card title="GitHub Issues" icon="bug" href="https://github.com/AdnanHodzic/auto-cpufreq/issues">
+    Report bugs and request features
+  </Card>
+  <Card title="Pull Requests" icon="code-pull-request" href="https://github.com/AdnanHodzic/auto-cpufreq/pulls">
+    View and submit code contributions
+  </Card>
+</CardGroup>
+
+### Set Up Development Environment
+
+Follow the [Development Setup](/development/setup) guide to configure your local environment.
+
+## Ways to Contribute
+
+### 1. Code Contributions
+
+Contribute new features, bug fixes, or improvements to the codebase.
+
+<Steps>
+  <Step title="Find an issue to work on">
+    Browse [GitHub Issues](https://github.com/AdnanHodzic/auto-cpufreq/issues) and look for:
+    - Issues labeled `good first issue` for beginners
+    - Issues labeled `help wanted` for intermediate contributors
+    - Feature requests that interest you
+    
+    Comment on the issue to let others know you're working on it.
+  </Step>
+  
+  <Step title="Fork and clone the repository">
+    ```bash
+    # Fork on GitHub, then clone your fork
+    git clone https://github.com/YOUR_USERNAME/auto-cpufreq.git
+    cd auto-cpufreq
+    
+    # Add upstream remote
+    git remote add upstream https://github.com/AdnanHodzic/auto-cpufreq.git
+    ```
+  </Step>
+  
+  <Step title="Create a feature branch">
+    ```bash
+    git checkout -b feature/my-feature-name
+    ```
+    
+    Use descriptive branch names:
+    - `feature/add-arm-support`
+    - `fix/thermal-threshold-bug`
+    - `docs/update-installation-guide`
+  </Step>
+  
+  <Step title="Make your changes">
+    - Write clean, readable code
+    - Follow existing code style
+    - Add comments for complex logic
+    - Test thoroughly
+  </Step>
+  
+  <Step title="Commit your changes">
+    ```bash
+    git add .
+    git commit -m "Add feature: description of your changes"
+    ```
+    
+    Write clear commit messages:
+    - Good: `Fix governor switching on AMD Ryzen 7000 series`
+    - Bad: `Fix bug`
+  </Step>
+  
+  <Step title="Push and create pull request">
+    ```bash
+    git push origin feature/my-feature-name
+    ```
+    
+    Then create a pull request on GitHub with:
+    - Clear title describing the change
+    - Description of what was changed and why
+    - Screenshots/output if applicable
+    - Reference to related issues (e.g., "Fixes #123")
+  </Step>
+</Steps>
+
+### 2. Bug Reports
+
+Report bugs to help improve auto-cpufreq's reliability.
+
+**Before reporting:**
+1. Try the [auto-cpufreq-genAI-chatbot](https://foolcontrol.org/?p=4903) for common issues
+2. Search existing issues to avoid duplicates
+3. Test with the latest version
+
+**Good bug reports include:**
+- Operating system and version
+- auto-cpufreq version (`auto-cpufreq --version`)
+- Installation method (installer, Snap, AUR, etc.)
+- CPU model and driver (`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver`)
+- Steps to reproduce
+- Expected vs actual behavior
+- Debug output (`sudo auto-cpufreq --debug`)
+- Logs if daemon-related (`journalctl -u auto-cpufreq -n 100`)
+
+### 3. Feature Requests
+
+Suggest new features or improvements.
+
+**Good feature requests:**
+- Explain the problem you're trying to solve
+- Describe your proposed solution
+- Provide use cases and examples
+- Consider alternative approaches
+- Check if similar requests exist
+
+### 4. Documentation
+
+Improve documentation in the README, wiki, or this documentation site.
+
+**Documentation contributions can include:**
+- Fixing typos or unclear wording
+- Adding examples and tutorials
+- Translating documentation
+- Creating guides for specific distributions
+- Improving API documentation
+
+### 5. Testing
+
+Test auto-cpufreq on different hardware and configurations:
+
+- New CPU models (especially AMD Ryzen, Intel 13th/14th gen)
+- Different Linux distributions
+- Edge cases and unusual configurations
+- Beta features and pull requests
+
+Report your findings in GitHub issues or Discord.
+
+### 6. Support
+
+Help other users:
+
+- Answer questions in GitHub Discussions
+- Help troubleshoot issues in Discord
+- Share your configuration and tips
+
+## Coding Guidelines
+
+### Code Style
+
+- Follow PEP 8 Python style guidelines
+- Use 4 spaces for indentation (no tabs)
+- Maximum line length: 100 characters (flexible)
+- Use descriptive variable names
+
+### Code Organization
+
+```python
+# Good: Clear, descriptive names
+def get_cpu_temperature():
+    """Get current CPU temperature from sensors"""
+    temps = psutil.sensors_temperatures()
+    return calculate_average(temps)
+
+# Bad: Unclear names
+def get_temp():
+    t = psutil.sensors_temperatures()
+    return calc(t)
+```
+
+### Comments and Documentation
+
+```python
+def set_autofreq():
+    """
+    Main decision-making function for automatic frequency scaling.
+    
+    Monitors system state (battery, load, temperature) and adjusts
+    CPU governor and turbo boost accordingly.
+    """
+    # Get 1-minute load average
+    load1m = psutil.getloadavg()[0]
+    
+    # Decision logic based on power source
+    if charging():
+        set_performance()  # AC power - maximize performance
+    else:
+        set_powersave()    # Battery - maximize battery life
+```
+
+### Error Handling
+
+```python
+# Good: Handle errors gracefully
+try:
+    with open(governor_path, "w") as f:
+        f.write("powersave")
+except IOError as e:
+    print(f"Error setting governor: {e}")
+    print("Check if you're running with sudo privileges")
+
+# Bad: Unhandled errors
+with open(governor_path, "w") as f:
+    f.write("powersave")
+```
+
+### Testing Your Changes
+
+Before submitting a pull request:
+
+<Tabs>
+  <Tab title="Manual Testing">
+    ```bash
+    # Test monitor mode
+    sudo poetry run auto-cpufreq --monitor
+    
+    # Test live mode
+    sudo poetry run auto-cpufreq --live
+    
+    # Test with debug output
+    sudo poetry run auto-cpufreq --debug --monitor
+    
+    # Test config file
+    sudo poetry run auto-cpufreq --config=test.conf --monitor
+    ```
+  </Tab>
+  
+  <Tab title="Test Different Scenarios">
+    - AC power vs battery
+    - Different governors
+    - Turbo enabled vs disabled
+    - Config file overrides
+    - Error conditions (invalid config, missing permissions)
+  </Tab>
+  
+  <Tab title="Check for Regressions">
+    Ensure your changes don't break existing functionality:
+    - Test all major features
+    - Try different installation methods if possible
+    - Check daemon mode if applicable
+  </Tab>
+</Tabs>
+
+## Pull Request Process
+
+### PR Checklist
+
+Before submitting your PR, verify:
+
+- [ ] Code follows project style guidelines
+- [ ] Changes are tested and working
+- [ ] Commit messages are clear and descriptive
+- [ ] PR description explains what and why
+- [ ] Related issues are referenced ("Fixes #123")
+- [ ] No unrelated changes included
+- [ ] Documentation updated if needed
+
+### PR Review Process
+
+1. **Automated checks**: GitHub Actions may run automated tests
+2. **Maintainer review**: A project maintainer will review your code
+3. **Feedback**: You may receive comments or change requests
+4. **Revisions**: Make any requested changes and push updates
+5. **Approval**: Once approved, your PR will be merged
+6. **Recognition**: You'll be credited in the release notes!
+
+### After Your PR is Merged
+
+Congratulations! Your contribution is now part of auto-cpufreq.
+
+1. **Update your fork**:
+   ```bash
+   git checkout master
+   git pull upstream master
+   git push origin master
+   ```
+
+2. **Clean up branches**:
+   ```bash
+   git branch -d feature/my-feature-name
+   ```
+
+3. **Celebrate** 🎉 and consider your next contribution!
+
+## Specific Contribution Areas
+
+### Adding Support for New Hardware
+
+If you have hardware that auto-cpufreq doesn't fully support:
+
+1. Test current behavior with `--debug` flag
+2. Identify what's missing (governor support, turbo control, etc.)
+3. Research sysfs interfaces for your hardware
+4. Implement support with fallbacks for other hardware
+5. Submit PR with your hardware details
+
+### Adding Distribution Support
+
+To add support for a new Linux distribution:
+
+1. Test installation process on the distribution
+2. Document any distribution-specific steps
+3. Add to README installation section
+4. Consider creating distribution package (AUR, RPM, etc.)
+
+### Improving Battery Support
+
+Battery charging thresholds support is expanding. To add support for your device:
+
+1. Identify the kernel module (check `lsmod`)
+2. Find sysfs paths for threshold control
+3. Implement in `auto_cpufreq/battery_scripts/`
+4. Add device to supported list
+5. Test thoroughly
+
+See `battery_scripts/asus.py` and `battery_scripts/ideapad_laptop.py` for examples.
+
+## Communication Guidelines
+
+- Be respectful and constructive
+- Assume good intentions
+- Ask questions if something is unclear
+- Provide context in discussions
+- Keep discussions on-topic
+- Be patient - maintainers are volunteers
+
+## Recognition
+
+All contributors are recognized in:
+- Release notes for their contributions
+- GitHub contributor list
+- Project acknowledgments
+
+Significant contributors may be invited to become co-maintainers.
+
+## Getting Help
+
+If you need help with your contribution:
+
+- Ask in the [Discord server](https://discord.gg/Sjauxtj6kH)
+- Post in [GitHub Discussions](https://github.com/AdnanHodzic/auto-cpufreq/discussions)
+- Comment on the relevant issue
+- Reach out to maintainers
+
+Don't hesitate to ask questions - everyone was a beginner once!
+
+## License
+
+By contributing to auto-cpufreq, you agree that your contributions will be licensed under the project's LGPL-3.0 license.
+
+## Thank You!
+
+Thank you for considering contributing to auto-cpufreq. Your contributions help make Linux better for everyone!
+
+<CardGroup cols={2}>
+  <Card title="Development Setup" icon="code" href="/development/setup">
+    Set up your development environment
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Understand the codebase structure
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/AdnanHodzic/auto-cpufreq">
+    Visit the repository
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.gg/Sjauxtj6kH">
+    Join the community
+  </Card>
+</CardGroup>

@@ -1,0 +1,336 @@
+---
+title: Bluetooth Boot Control
+description: Control Bluetooth state on system boot
+---
+
+The Bluetooth boot control options allow you to configure whether Bluetooth is enabled or disabled when your system starts.
+
+## Syntax
+
+### Disable Bluetooth on Boot
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_off
+```
+
+### Enable Bluetooth on Boot
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_on
+```
+
+## Description
+
+These options:
+- Configure Bluetooth to automatically turn on or off at boot
+- Help save power by disabling unused Bluetooth
+- Useful for systems that don't use Bluetooth regularly
+- Settings persist across reboots
+- Implementation differs between snap and standard installations
+
+## Requirements
+
+- **Root privileges**: Required to modify boot settings (standard installation)
+- **Bluetooth hardware**: System must have Bluetooth capability
+
+## Example Usage
+
+### Disable Bluetooth at Boot
+
+Save power by disabling Bluetooth on startup:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_off
+```
+
+### Enable Bluetooth at Boot
+
+Ensure Bluetooth is available after boot:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_on
+```
+
+## Expected Output
+
+### Standard Installation
+
+**Disabling Bluetooth:**
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Bluetooth disabled on boot
+
+-------------------------------------------------------------------------------
+```
+
+**Enabling Bluetooth:**
+```
+-------------------------------- auto-cpufreq ---------------------------------
+
+Bluetooth enabled on boot
+
+-------------------------------------------------------------------------------
+```
+
+### Snap Installation
+
+For snap installations, you'll see a notification message instead of directly modifying the system.
+
+## Behavior
+
+### Standard Installation
+
+**--bluetooth_boot_off:**
+1. Checks for root privileges
+2. Calls `bluetooth_disable()` function
+3. Configures system to disable Bluetooth at boot
+4. Takes effect on next reboot
+
+**--bluetooth_boot_on:**
+1. Checks for root privileges
+2. Calls `bluetooth_enable()` function
+3. Configures system to enable Bluetooth at boot
+4. Takes effect on next reboot
+
+### Snap Installation
+
+Snap installations have limited system access, so:
+- Shows notification about Bluetooth settings
+- May require manual configuration
+- Uses snap-specific notification functions
+
+## Use Cases
+
+### Power Saving on Laptops
+
+If you rarely use Bluetooth, disable it to save battery:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_off
+```
+
+Bluetooth radios consume power even when not actively connected.
+
+### Desktop Systems
+
+Desktop systems without Bluetooth devices can disable it:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_off
+```
+
+Reduces unnecessary services and power draw.
+
+### Systems with Bluetooth Peripherals
+
+If you use Bluetooth keyboard, mouse, or headphones:
+
+```bash
+sudo auto-cpufreq --bluetooth_boot_on
+```
+
+Ensures Bluetooth is ready when you log in.
+
+### Temporary Bluetooth Disable
+
+For testing or troubleshooting:
+
+```bash
+# Disable for next boot
+sudo auto-cpufreq --bluetooth_boot_off
+
+# After testing, re-enable
+sudo auto-cpufreq --bluetooth_boot_on
+```
+
+## Manual Bluetooth Control
+
+These options only control boot behavior. You can still manually control Bluetooth during a session:
+
+### Enable Bluetooth (Current Session)
+
+```bash
+sudo systemctl start bluetooth
+```
+
+Or using rfkill:
+```bash
+sudo rfkill unblock bluetooth
+```
+
+### Disable Bluetooth (Current Session)
+
+```bash
+sudo systemctl stop bluetooth
+```
+
+Or using rfkill:
+```bash
+sudo rfkill block bluetooth
+```
+
+### Check Bluetooth Status
+
+```bash
+sudo systemctl status bluetooth
+```
+
+Or:
+```bash
+rfkill list bluetooth
+```
+
+## Implementation Details
+
+### Standard Installation
+
+The functions typically:
+- Modify systemd service configuration
+- May use rfkill to block/unblock Bluetooth
+- May modify Bluetooth service auto-start settings
+- Changes persist across reboots
+
+### Snap Installation
+
+Snap installations have restrictions:
+- Limited system access due to snap confinement
+- Uses snap-specific notification system
+- May require manual intervention for some changes
+
+## Notes
+
+- **Boot-time only**: These options only affect boot behavior
+- **Immediate effect**: Changes take effect on next boot
+- **Reversible**: Can easily switch between on and off
+- **Service independent**: Works independently of auto-cpufreq daemon
+- **Power savings**: Disabling Bluetooth can save 50-100mW
+
+## Warnings
+
+### Bluetooth Peripherals
+
+If you disable Bluetooth on boot and use Bluetooth keyboard/mouse:
+- You may not be able to log in without a wired keyboard/mouse
+- Have a backup input method available
+- Or enable Bluetooth before rebooting
+
+### Snap Limitations
+
+```
+Note: Snap installation detected
+Bluetooth boot settings may require manual configuration
+```
+
+Snap users may need to:
+- Manually configure systemd services
+- Use system settings to control Bluetooth
+
+## Verification
+
+To verify Bluetooth boot settings after reboot:
+
+### Check Bluetooth Status
+
+```bash
+sudo systemctl status bluetooth
+```
+
+### Check rfkill Status
+
+```bash
+rfkill list bluetooth
+```
+
+Output:
+```
+0: hci0: Bluetooth
+    Soft blocked: yes
+    Hard blocked: no
+```
+
+- **Soft blocked: yes** - Disabled by software (expected if boot_off)
+- **Soft blocked: no** - Enabled (expected if boot_on)
+- **Hard blocked: yes** - Disabled by hardware switch
+
+## Power Savings
+
+Disabling Bluetooth can save:
+- **Idle power**: 50-100mW
+- **Active scanning**: 150-300mW
+- **Connected devices**: 200-500mW
+
+For laptops, this translates to:
+- Additional 30-60 minutes of battery life (typical battery)
+- Reduced standby power drain
+
+## Related Commands
+
+- [--install](/cli/install) - Install daemon (may show Bluetooth notification)
+- [--debug](/cli/debug) - Debug system information (includes Bluetooth status)
+
+## Desktop Environment Integration
+
+Many desktop environments have Bluetooth settings:
+
+### GNOME
+
+Settings → Bluetooth → Toggle switch
+
+### KDE Plasma
+
+System Settings → Bluetooth → Enable Bluetooth
+
+### XFCE
+
+Blueman (Bluetooth Manager)
+
+These GUI controls override the boot setting during the session.
+
+## Troubleshooting
+
+### Bluetooth Still Enabled After boot_off
+
+1. **Check systemd service:**
+   ```bash
+   sudo systemctl status bluetooth
+   ```
+
+2. **Check if it's masked:**
+   ```bash
+   sudo systemctl is-enabled bluetooth
+   ```
+
+3. **Manually disable:**
+   ```bash
+   sudo systemctl disable bluetooth
+   sudo systemctl stop bluetooth
+   ```
+
+### Can't Enable Bluetooth After boot_on
+
+1. **Check hardware switch:**
+   ```bash
+   rfkill list bluetooth
+   ```
+
+2. **Unblock if needed:**
+   ```bash
+   sudo rfkill unblock bluetooth
+   ```
+
+3. **Start service:**
+   ```bash
+   sudo systemctl start bluetooth
+   ```
+
+### Permission Denied (Non-Snap)
+
+```
+ERROR: Root privileges required
+```
+
+**Solution:**
+```bash
+sudo auto-cpufreq --bluetooth_boot_off
+```
