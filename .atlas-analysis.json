@@ -1,0 +1,132 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "auto-cpufreq",
+  "projectDescription": "Automatic CPU speed & power optimizer for Linux",
+  "theme": "aspen",
+  "primaryColor": "#e09234",
+  "lightColor": "#988c8a",
+  "darkColor": "#d9d8d3",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "usage/modes",
+              "usage/monitor",
+              "usage/live",
+              "usage/daemon",
+              "usage/stats"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/config-file",
+              "configuration/governor-override",
+              "configuration/turbo-mode",
+              "configuration/battery-thresholds",
+              "configuration/power-profiles"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/updating",
+              "guides/bluetooth-management",
+              "guides/troubleshooting",
+              "guides/aur-installation",
+              "guides/nixos-installation",
+              "guides/snap-installation"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/overview",
+              "cli/monitor",
+              "cli/live",
+              "cli/install",
+              "cli/remove",
+              "cli/update",
+              "cli/stats",
+              "cli/force",
+              "cli/turbo",
+              "cli/config",
+              "cli/bluetooth",
+              "cli/debug",
+              "cli/version"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Advanced",
+        "groups": [
+          {
+            "group": "Features",
+            "pages": [
+              "advanced/how-it-works",
+              "advanced/governors",
+              "advanced/turbo-boost",
+              "advanced/battery-optimization",
+              "advanced/temperature-management"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/setup",
+              "development/contributing",
+              "development/architecture"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Automatic CPU frequency scaling based on battery state and system load",
+    "Governor management (powersave/performance/balanced)",
+    "Turbo boost control with automatic, always, or never modes",
+    "Real-time CPU monitoring with temperature and usage tracking",
+    "Battery charging threshold configuration for supported devices",
+    "Daemon mode for persistent automatic optimizations",
+    "Live mode for temporary optimizations without installation",
+    "Configuration file support for custom profiles",
+    "GUI interface for system monitoring and control",
+    "Bluetooth power management"
+  ],
+  "publicApiSurface": [
+    "auto-cpufreq --monitor",
+    "auto-cpufreq --live",
+    "auto-cpufreq --install",
+    "auto-cpufreq --remove",
+    "auto-cpufreq --update",
+    "auto-cpufreq --stats",
+    "auto-cpufreq --force=<governor>",
+    "auto-cpufreq --turbo=<mode>",
+    "auto-cpufreq --config=<path>",
+    "auto-cpufreq --bluetooth_boot_off",
+    "auto-cpufreq --bluetooth_boot_on",
+    "auto-cpufreq --debug",
+    "auto-cpufreq --version",
+    "auto-cpufreq-gtk"
+  ]
+}
